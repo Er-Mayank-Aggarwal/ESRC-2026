@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ESRC 2026 - Competition Management System
+
+Welcome to the ESRC 2026 project repository! This is a comprehensive Next.js web application designed to manage team competitions, track daily tasks, distribute questions, and display real-time leaderboards. 
+
+## Features
+
+- **🏆 Real-time Leaderboard:** View live team rankings, scores, and rank changes.
+- **🛡️ Secure Admin Panel:** Protected by Firebase Authentication (Email/Password), allowing authorized personnel to:
+  - Add, edit, and safely delete daily questions.
+  - Distribute questions to all registered teams.
+  - Revoke distributions (with safe undo/redo workflows).
+  - Manage custom holidays and competition schedules.
+- **📚 API Documentation:** A conceptual Swagger UI page located at `/docs` detailing the database schema and operations.
+- **🔥 Firebase Integration:** Uses Firestore for fast, scalable, real-time database operations directly from the client.
+
+## Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org) (App Router)
+- **Styling:** Tailwind CSS
+- **Database:** Firebase Firestore
+- **Authentication:** Firebase Auth
+- **API Docs:** Swagger UI React
 
 ## Getting Started
 
-First, run the development server:
+### 1. Environment Variables
+Create a `.env.local` file in the root directory and add your Firebase configuration:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Firebase Security Rules
+Ensure your Firestore Security Rules are set to securely allow authenticated writes and public reads:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read: if true; 
+      allow write: if request.auth != null; 
+    }
+  }
+}
+```
+*Note: Make sure to enable Email/Password Authentication in your Firebase Console and manually create an Admin user.*
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Running the Development Server
 
-## Learn More
+Install dependencies and start the local server:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm install
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Application Structure
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **`/`** - Main dashboard / landing page.
+- **`/leaderboard`** - Public facing team rankings.
+- **`/admin`** - Admin dashboard for managing teams and scores.
+- **`/admin/login`** - Firebase Authentication login page.
+- **`/admin/questions`** - Manage daily questions and handle distributions/revocations.
+- **`/docs`** - Swagger UI documenting the Firestore data model.

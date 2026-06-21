@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getLeaderboard, getDailyLeaderboard, checkIsHoliday } from "@/lib/firestore";
 import type { LeaderboardEntry } from "@/lib/types";
+import { getTodayDateIST } from "@/lib/utils";
 
 function getTodayDate(): string {
-  return new Date().toISOString().split("T")[0];
+  return getTodayDateIST();
 }
 
 type TabType = "overall" | "daily";

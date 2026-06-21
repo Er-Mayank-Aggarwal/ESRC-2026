@@ -12,11 +12,12 @@ import {
   getCompetitionDay,
 } from "@/lib/firestore";
 import type { Team, TeamDailyRecord, LeaderboardEntry } from "@/lib/types";
+import { getTodayDateIST } from "@/lib/utils";
 
 type Tab = "tasks" | "history" | "stats" | "leaderboard";
 
 function getTodayDate(): string {
-  return new Date().toISOString().split("T")[0];
+  return getTodayDateIST();
 }
 
 function formatDateTime(iso: string | null): string {

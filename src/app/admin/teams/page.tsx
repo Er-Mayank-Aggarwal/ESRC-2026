@@ -11,9 +11,10 @@ import {
   updateDailyScore,
 } from "@/lib/firestore";
 import type { Team, DailyTask, TeamDailyRecord } from "@/lib/types";
+import { getTodayDateIST } from "@/lib/utils";
 
 function getTodayDate(): string {
-  return new Date().toISOString().split("T")[0];
+  return getTodayDateIST();
 }
 
 function formatTime(iso: string | null): string {

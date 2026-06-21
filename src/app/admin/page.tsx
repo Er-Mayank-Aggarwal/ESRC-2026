@@ -5,10 +5,7 @@ import Link from "next/link";
 import { getTeams, getDailyTask, getAllRecordsForDate } from "@/lib/firestore";
 import type { Team, TeamDailyRecord } from "@/lib/types";
 import LeaderboardPage from "../leaderboard/page";
-
-function getTodayDate(): string {
-  return new Date().toISOString().split("T")[0];
-}
+import { getTodayDateIST } from "@/lib/utils";
 
 export default function AdminDashboard() {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -17,7 +14,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const today = getTodayDate();
+    const today = getTodayDateIST();
     Promise.all([getTeams(), getDailyTask(today), getAllRecordsForDate(today)])
       .then(([t, dt, r]) => {
         setTeams(t);

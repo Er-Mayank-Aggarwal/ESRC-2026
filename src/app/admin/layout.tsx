@@ -46,7 +46,7 @@ function AdminGuard({ children }: { children: ReactNode }) {
             Manage questions, teams, and scores
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
           <AdminNavLink href="/admin" label="Dashboard" />
           <AdminNavLink href="/admin/questions" label="Questions" />
           <AdminNavLink href="/admin/teams" label="Progress" />
@@ -54,7 +54,7 @@ function AdminGuard({ children }: { children: ReactNode }) {
           <AdminNavLink href="/admin/holidays" label="Holidays" />
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="ml-2 rounded-md bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger/20 transition-colors"
+            className="rounded-md bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger/20 transition-colors"
           >
             Logout
           </button>

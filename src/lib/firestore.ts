@@ -160,13 +160,24 @@ export async function getAllRecordsForDate(date: string): Promise<TeamDailyRecor
   return snapshot.docs.map(d => d.data() as TeamDailyRecord);
 }
 
-export async function createTeamDailyRecord(teamId: string, date: string, numQuestions: number): Promise<void> {
+export async function createTeamDailyRecord(teamId: string, date: string, numQuestions: number, totalQuestions?: number): Promise<void> {
   const id = `${teamId}_${date}`;
+  
+  let assignedQuestionIndices = Array.from({ length: numQuestions }, (_, i) => i);
+  if (totalQuestions && totalQuestions >= numQuestions) {
+    const allIndices = Array.from({ length: totalQuestions }, (_, i) => i);
+    for (let i = allIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
+    }
+    assignedQuestionIndices = allIndices.slice(0, numQuestions);
+  }
+
   const record: TeamDailyRecord = {
     id,
     teamId,
     date,
-    assignedQuestionIndices: Array.from({ length: numQuestions }, (_, i) => i),
+    assignedQuestionIndices,
     questionCompletions: Array(numQuestions).fill(false),
     isCompleted: false,
     completionTime: null,
@@ -314,10 +325,18 @@ export async function distributeQuestions(date: string): Promise<void> {
   for (const team of teams) {
     const record = await getTeamDailyRecord(team.id, date);
     if (!record) {
-      await createTeamDailyRecord(team.id, date, task.questionsPerTeam);
+      await createTeamDailyRecord(team.id, date, task.questionsPerTeam, task.allQuestions.length);
     } else if (record.questionCompletions.length !== task.questionsPerTeam) {
       // Re-initialize question tracking array if the admin changed the # of questions
+      const allIndices = Array.from({ length: task.allQuestions.length }, (_, i) => i);
+      for (let i = allIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
+      }
+      const assignedQuestionIndices = allIndices.slice(0, task.questionsPerTeam);
+
       await updateDoc(doc(db, "teamDailyRecords", record.id), {
+        assignedQuestionIndices,
         questionCompletions: Array(task.questionsPerTeam).fill(false),
         isCompleted: false,
         completionTime: null
@@ -333,11 +352,19 @@ export async function forceNewDistribution(date: string): Promise<void> {
   const teams = await getTeams();
   for (const team of teams) {
     const id = `${team.id}_${date}`;
+    
+    const allIndices = Array.from({ length: task.allQuestions.length }, (_, i) => i);
+    for (let i = allIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
+    }
+    const assignedQuestionIndices = allIndices.slice(0, task.questionsPerTeam);
+
     const record: TeamDailyRecord = {
       id,
       teamId: team.id,
       date,
-      assignedQuestionIndices: Array.from({ length: task.questionsPerTeam }, (_, i) => i),
+      assignedQuestionIndices,
       questionCompletions: Array(task.questionsPerTeam).fill(false),
       isCompleted: false,
       completionTime: null,

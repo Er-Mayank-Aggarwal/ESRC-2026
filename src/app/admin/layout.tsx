@@ -44,9 +44,9 @@ function AdminGuard({ children }: { children: ReactNode }) {
           </h1>
           <p className="text-xs text-text-muted">
             Manage questions, teams, and scores
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+          <AdminNavLink href="/admin" label="Dashboard" />
           <AdminNavLink href="/admin/questions" label="Questions" />
           <AdminNavLink href="/admin/holidays" label="Holidays" />
           <button

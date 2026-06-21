@@ -16,7 +16,10 @@ import {
 import type { DailyTask, TeamDailyRecord } from "@/lib/types";
 
 function getTodayDate(): string {
-  return new Date().toISOString().split("T")[0];
+  // IST is UTC+5:30
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + 330);
+  return d.toISOString().split("T")[0];
 }
 
 export default function QuestionsPage() {
@@ -89,10 +92,19 @@ export default function QuestionsPage() {
   }
 
   async function handleDeleteQuestion() {
-    if (!existingTask) return;
     if (!confirm("Are you sure you want to delete this question?")) return;
+    
+    if (!existingTask) {
+      const updated = [...questions];
+      updated.splice(viewIdx, 1);
+      setQuestions(updated);
+      setViewIdx(Math.max(0, viewIdx - 1));
+      return;
+    }
+
     await deleteQuestionFromDay(date, viewIdx);
     await loadData(date);
+    setViewIdx(Math.max(0, viewIdx - 1));
   }
 
   async function handleDistribute() {

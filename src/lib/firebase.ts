@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -13,18 +13,8 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-let db;
-try {
-  // Enable robust native offline persistence (only safely in browser)
-  db = typeof window !== "undefined"
-    ? initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-      })
-    : getFirestore(app);
-} catch (e) {
-  // Fallback to normal getFirestore if already initialized (e.g. during Hot Reload)
-  db = getFirestore(app);
-}
+// Standard Firebase initialization without offline persistence
+const db = getFirestore(app);
 
 const auth = getAuth(app);
 

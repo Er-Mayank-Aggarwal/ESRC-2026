@@ -45,7 +45,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <InstallToast title="Install Admin App" />
+      <InstallToast title="Install Admin App" hideIconOnDismiss={true} />
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
         <StatCard label="Total Teams" value={teams.length} />

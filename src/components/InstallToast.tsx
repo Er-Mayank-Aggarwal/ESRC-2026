@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 interface InstallToastProps {
   title?: string;
   description?: string;
+  hideIconOnDismiss?: boolean;
 }
 
 type ViewState = "hidden" | "toast" | "icon";
 
 export default function InstallToast({ 
   title = "Install App", 
-  description = "Get quick access from your home screen" 
+  description = "Get quick access from your home screen",
+  hideIconOnDismiss = false
 }: InstallToastProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [viewState, setViewState] = useState<ViewState>("hidden");
@@ -41,7 +43,11 @@ export default function InstallToast({
   };
 
   const handleDismissToIcon = () => {
-    setViewState("icon");
+    if (hideIconOnDismiss) {
+      setViewState("hidden");
+    } else {
+      setViewState("icon");
+    }
   };
 
   const handleExpandToToast = () => {

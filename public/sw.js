@@ -38,17 +38,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // STRATEGY 2: NETWORK FIRST (For Firebase/API calls)
-  // Always tries to get the latest questions/scores, but falls back to offline cache if no internet.
+  // STRATEGY 2: STALE-WHILE-REVALIDATE (For Firebase/API calls)
   if (url.hostname.includes('firebaseio.com') || url.hostname.includes('googleapis.com')) {
     event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
           return networkResponse;
-        })
-        .catch(() => caches.match(event.request))
+        }).catch(() => {
+          // Ignore offline errors
+        });
+        return cachedResponse || fetchPromise;
+      })
     );
     return;
   }

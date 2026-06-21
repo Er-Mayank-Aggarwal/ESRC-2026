@@ -6,6 +6,7 @@ import { getTeams, getDailyTask, getAllRecordsForDate } from "@/lib/firestore";
 import type { Team, TeamDailyRecord } from "@/lib/types";
 import LeaderboardPage from "../leaderboard/page";
 import { getTodayDateIST } from "@/lib/utils";
+import AdminInstallToast from "@/components/AdminInstallToast";
 
 export default function AdminDashboard() {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -44,6 +45,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
+      <AdminInstallToast />
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
         <StatCard label="Total Teams" value={teams.length} />

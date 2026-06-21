@@ -12,7 +12,7 @@ export const seedTeams: Team[] = [
       "Aaryan Vyas",
       "Madhavan Purohit"
     ],
-    "totalScore": 320
+    "totalScore": 250
   },
   {
     "id": "esrc26-2",
@@ -25,7 +25,7 @@ export const seedTeams: Team[] = [
       "Devendra Gehlot",
       "Bhavishya Verma"
     ],
-    "totalScore": 310
+    "totalScore": 240
   },
   {
     "id": "esrc26-3",
@@ -38,7 +38,7 @@ export const seedTeams: Team[] = [
       "Jaswant Kumar",
       "Abhishek Meena"
     ],
-    "totalScore": 350
+    "totalScore": 250
   },
   {
     "id": "esrc26-4",
@@ -90,7 +90,7 @@ export const seedTeams: Team[] = [
       "Deekshant Choudhary",
       "Himanshu Raghav"
     ],
-    "totalScore": 360
+    "totalScore": 260
   },
   {
     "id": "esrc26-8",
@@ -116,7 +116,7 @@ export const seedTeams: Team[] = [
       "Harshit Bohra",
       "Harish Kumar"
     ],
-    "totalScore": 440
+    "totalScore": 370
   },
   {
     "id": "esrc26-10",
@@ -168,7 +168,7 @@ export const seedTeams: Team[] = [
       "Harsh Gurjar",
       "Yashwardhan Jangid"
     ],
-    "totalScore": 370
+    "totalScore": 300
   },
   {
     "id": "esrc26-14",
@@ -194,7 +194,7 @@ export const seedTeams: Team[] = [
       "Milli Ranka",
       "Nitish Kumar"
     ],
-    "totalScore": 420
+    "totalScore": 320
   },
   {
     "id": "esrc26-16",
@@ -220,7 +220,7 @@ export const seedTeams: Team[] = [
       "Pratham Kumar Panwar",
       "Gaurav Puri"
     ],
-    "totalScore": 450
+    "totalScore": 350
   },
   {
     "id": "esrc26-18",
@@ -246,7 +246,7 @@ export const seedTeams: Team[] = [
       "Mahesh Kumar",
       "Lokesh Kumhar"
     ],
-    "totalScore": 450
+    "totalScore": 350
   },
   {
     "id": "esrc26-20",
@@ -272,7 +272,7 @@ export const seedTeams: Team[] = [
       "Divyanshu Gour",
       "Dileep"
     ],
-    "totalScore": 390
+    "totalScore": 320
   },
   {
     "id": "esrc26-22",
@@ -350,7 +350,7 @@ export const seedTeams: Team[] = [
       "Tanishtha Soni",
       "Sandhya Nishad"
     ],
-    "totalScore": 340
+    "totalScore": 270
   },
   {
     "id": "esrc26-28",
@@ -376,7 +376,7 @@ export const seedTeams: Team[] = [
       "Subham",
       "Manvendar Singh Shekhawat"
     ],
-    "totalScore": 420
+    "totalScore": 350
   },
   {
     "id": "esrc26-30",
@@ -389,7 +389,7 @@ export const seedTeams: Team[] = [
       "Hassan Razza",
       "Rahul Batra"
     ],
-    "totalScore": 400
+    "totalScore": 330
   },
   {
     "id": "esrc26-31",

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getTeams, getDailyTask, getAllRecordsForDate } from "@/lib/firestore";
 import type { Team, TeamDailyRecord } from "@/lib/types";
+import LeaderboardPage from "../leaderboard/page";
 
 function getTodayDate(): string {
   return new Date().toISOString().split("T")[0];
@@ -62,50 +63,58 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-8">
         <Link
           href="/admin/questions"
-          className="group rounded-xl border border-border-color bg-bg-secondary p-5 hover:border-accent/40 hover:shadow-[var(--card-shadow-hover)] transition-all"
+          className="group rounded-xl border border-border-color bg-bg-secondary p-4 hover:border-accent/40 hover:shadow-[var(--card-shadow-hover)] transition-all flex flex-col justify-between"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="12" y1="18" x2="12" y2="12" />
-                <line x1="9" y1="15" x2="15" y2="15" />
-              </svg>
-            </div>
-            <h3 className="text-sm font-semibold text-text-primary group-hover:text-accent transition-colors">
-              Add Daily Questions
+            <h3 className="text-[13px] font-semibold text-text-primary group-hover:text-accent transition-colors">
+              Add Questions
             </h3>
           </div>
-          <p className="text-xs text-text-muted">
-            Add questions and distribute them randomly across teams.
-          </p>
+          <p className="text-[11px] text-text-muted">Create daily tasks</p>
         </Link>
 
         <Link
           href="/admin/teams"
-          className="group rounded-xl border border-border-color bg-bg-secondary p-5 hover:border-accent/40 hover:shadow-[var(--card-shadow-hover)] transition-all"
+          className="group rounded-xl border border-border-color bg-bg-secondary p-4 hover:border-accent/40 hover:shadow-[var(--card-shadow-hover)] transition-all flex flex-col justify-between"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </div>
-            <h3 className="text-sm font-semibold text-text-primary group-hover:text-accent transition-colors">
+            <h3 className="text-[13px] font-semibold text-text-primary group-hover:text-accent transition-colors">
+              Progress
+            </h3>
+          </div>
+          <p className="text-[11px] text-text-muted">Update scores</p>
+        </Link>
+
+        <Link
+          href="/admin/manage-teams"
+          className="group rounded-xl border border-border-color bg-bg-secondary p-4 hover:border-accent/40 hover:shadow-[var(--card-shadow-hover)] transition-all flex flex-col justify-between"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-[13px] font-semibold text-text-primary group-hover:text-accent transition-colors">
               Manage Teams
             </h3>
           </div>
-          <p className="text-xs text-text-muted">
-            Mark tasks complete and assign daily scores to teams.
-          </p>
+          <p className="text-[11px] text-text-muted">Edit names/members</p>
         </Link>
+
+        <Link
+          href="/admin/holidays"
+          className="group rounded-xl border border-border-color bg-bg-secondary p-4 hover:border-accent/40 hover:shadow-[var(--card-shadow-hover)] transition-all flex flex-col justify-between"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-[13px] font-semibold text-text-primary group-hover:text-accent transition-colors">
+              Holidays
+            </h3>
+          </div>
+          <p className="text-[11px] text-text-muted">Set holidays</p>
+        </Link>
+      </div>
+
+      <div className="rounded-xl border border-border-color bg-bg-secondary overflow-hidden pt-4 pb-8">
+        <LeaderboardPage />
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "ESRC 2026 — Competition Dashboard",
+  title: "ESRC 2026",
   description:
     "ESRC 2026 competition dashboard. View team tasks, rankings, and the live leaderboard.",
 };

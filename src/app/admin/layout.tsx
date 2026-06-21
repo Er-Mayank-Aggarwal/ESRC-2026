@@ -47,10 +47,7 @@ function AdminGuard({ children }: { children: ReactNode }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-          <AdminNavLink href="/admin" label="Dashboard" />
           <AdminNavLink href="/admin/questions" label="Questions" />
-          <AdminNavLink href="/admin/teams" label="Progress" />
-          <AdminNavLink href="/admin/manage-teams" label="Manage Teams" />
           <AdminNavLink href="/admin/holidays" label="Holidays" />
           <button
             onClick={() => signOut({ callbackUrl: "/" })}

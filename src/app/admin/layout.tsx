@@ -1,28 +1,28 @@
 "use client";
 
-import { AuthProvider } from "@/components/AuthProvider";
-import { useSession } from "next-auth/react";
+import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useEffect, type ReactNode } from "react";
 
 function AdminGuard({ children }: { children: ReactNode }) {
-  const { status } = useSession();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (status === "unauthenticated" && pathname !== "/admin/login") {
+    if (!loading && !user && pathname !== "/admin/login") {
       router.push("/admin/login");
     }
-  }, [status, pathname, router]);
+  }, [user, loading, pathname, router]);
 
   if (pathname === "/admin/login") {
     return <>{children}</>;
   }
 
-  if (status === "loading") {
+  if (loading) {
     return (
       <div className="flex justify-center py-20">
         <div className="h-8 w-8 rounded-full border-2 border-border-color border-t-accent animate-spin" />
@@ -30,9 +30,14 @@ function AdminGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!user) {
     return null;
   }
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push("/");
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -51,7 +56,7 @@ function AdminGuard({ children }: { children: ReactNode }) {
           <AdminNavLink href="/admin/questions" label="Questions" />
           <AdminNavLink href="/admin/holidays" label="Holidays" />
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={handleLogout}
             className="rounded-md bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger/20 transition-colors"
           >
             Logout

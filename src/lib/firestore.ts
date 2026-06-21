@@ -105,6 +105,13 @@ export async function createDailyTask(date: string, allQuestions: string[], ques
   });
 }
 
+export async function updateTaskQuestionsPerTeam(date: string, newCount: number): Promise<void> {
+  const task = await getDailyTask(date);
+  if (task) {
+    await updateDoc(doc(db, "dailyTasks", date), { questionsPerTeam: newCount });
+  }
+}
+
 export async function updateQuestionText(date: string, qIdx: number, text: string): Promise<void> {
   const task = await getDailyTask(date);
   if (task) {

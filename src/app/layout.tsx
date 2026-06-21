@@ -22,7 +22,10 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <footer className="border-t border-border-color py-6 flex flex-col items-center justify-center gap-1.5 text-center text-[12px] text-text-muted">
             <p>© 2026 ESRC. All rights reserved.</p>
-            <p className="font-medium text-text-secondary">Designed and Developed by Mayank Aggarwal & Faizal Khan</p>
+            <div className="flex flex-col items-center font-medium text-text-secondary mt-1">
+              <span>Designed and Developed by</span>
+              <span>Mayank Aggarwal & Faizal Khan</span>
+            </div>
           </footer>
         </ThemeProvider>
       </body>

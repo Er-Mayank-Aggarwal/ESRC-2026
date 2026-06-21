@@ -23,19 +23,19 @@ export function Header() {
         </Link>
 
         {/* Nav */}
-        <nav className="flex items-center gap-0.5">
+        <nav className="flex items-center gap-1 sm:gap-0.5">
           <NavLink href="/" label="Teams" active={pathname === "/"} />
           <NavLink href="/leaderboard" label="Leaderboard" active={pathname === "/leaderboard"} />
           {isAdmin && (
             <NavLink href="/admin" label="Admin" active={pathname.startsWith("/admin")} />
           )}
 
-          <div className="ml-3 h-4 w-px bg-border-color" />
+          <div className="ml-1 sm:ml-3 h-4 w-px bg-border-color" />
 
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="ml-3 flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+            className="ml-1 sm:ml-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
             aria-label="Toggle theme"
           >
             {theme === "dark" ? (

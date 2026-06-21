@@ -9,6 +9,7 @@ import {
   updateQuestionText,
   addQuestionToDay,
   getTeams,
+  updateTaskQuestionsPerTeam,
 } from "@/lib/firestore";
 import type { DailyTask, TeamDailyRecord } from "@/lib/types";
 
@@ -94,6 +95,8 @@ export default function QuestionsPage() {
     try {
       if (!existingTask) {
         await createDailyTask(date, questions, questionsPerTeam);
+      } else if (existingTask.questionsPerTeam !== questionsPerTeam) {
+        await updateTaskQuestionsPerTeam(date, questionsPerTeam);
       }
       await distributeQuestions(date);
       const teams = await getTeams();
@@ -141,8 +144,7 @@ export default function QuestionsPage() {
             inputMode="numeric"
             value={questionsPerTeam}
             onChange={(e) => setQuestionsPerTeam(Number(e.target.value) || 0)}
-            disabled={distributed}
-            className="w-16 rounded-lg border border-border-color bg-bg-secondary py-1.5 px-3 text-[13px] text-text-primary text-center outline-none focus:border-accent disabled:opacity-50"
+            className="w-16 rounded-lg border border-border-color bg-bg-secondary py-1.5 px-3 text-[13px] text-text-primary text-center outline-none focus:border-accent"
           />
         </div>
       </div>

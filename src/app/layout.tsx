@@ -16,12 +16,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark h-full" suppressHydrationWarning>
-      <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans">
+      <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans overflow-x-hidden">
         <ThemeProvider>
           <Header />
           <main className="flex-1">{children}</main>
-          <footer className="border-t border-border-color py-5 text-center text-[11px] text-text-muted tracking-wide">
-            © 2026 ESRC. All rights reserved.
+          <footer className="border-t border-border-color py-6 flex flex-col items-center justify-center gap-1.5 text-center text-[12px] text-text-muted">
+            <p>© 2026 ESRC. All rights reserved.</p>
+            <p className="font-medium text-text-secondary">Designed and Developed by Mayank Aggarwal & Faizal Khan</p>
           </footer>
         </ThemeProvider>
       </body>

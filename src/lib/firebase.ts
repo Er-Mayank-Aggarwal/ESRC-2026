@@ -13,12 +13,18 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Enable robust native offline persistence
-const db = typeof window !== "undefined"
-  ? initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    })
-  : getFirestore(app);
+let db;
+try {
+  // Enable robust native offline persistence (only safely in browser)
+  db = typeof window !== "undefined"
+    ? initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      })
+    : getFirestore(app);
+} catch (e) {
+  // Fallback to normal getFirestore if already initialized (e.g. during Hot Reload)
+  db = getFirestore(app);
+}
 
 const auth = getAuth(app);
 

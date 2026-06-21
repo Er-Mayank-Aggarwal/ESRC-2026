@@ -1,9 +1,9 @@
 "use client";
 
-import InstallPWA from "@/components/InstallPWA";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import InstallToast from "@/components/InstallToast";
 import {
   getTeamById,
   getTeamDailyRecord,
@@ -105,11 +105,9 @@ export default function TeamDashboard() {
           </svg>
           All Teams
         </Link>
-        <InstallPWA />
       </div>
 
-
-      {/* Team Header Card */}
+      <InstallToast title="Install Team Dashboard" />
       <div className="rounded-xl border border-border-color bg-bg-secondary p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3.5">

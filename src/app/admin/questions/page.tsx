@@ -9,7 +9,7 @@ import {
   updateQuestionText,
   addQuestionToDay,
   deleteQuestionFromDay,
-  forceNewDistribution,
+  revokeDistribution,
   getTeams,
   updateTaskQuestionsPerTeam,
 } from "@/lib/firestore";
@@ -36,7 +36,6 @@ export default function QuestionsPage() {
   const [editText, setEditText] = useState("");
   const [distributing, setDistributing] = useState(false);
   const [distributed, setDistributed] = useState(false);
-  const [revoked, setRevoked] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [viewIdx, setViewIdx] = useState(0);
 
@@ -51,7 +50,6 @@ export default function QuestionsPage() {
     setExistingTask(task);
     setRecords(recs);
     setDistributed(recs.length > 0);
-    setRevoked(false);
     if (task) {
       setQuestions(task.allQuestions);
       setQuestionsPerTeam(task.questionsPerTeam);
@@ -132,23 +130,17 @@ export default function QuestionsPage() {
     setDistributing(false);
   }
 
-  async function handleForceNewDistribution() {
-    if (!confirm("WARNING: This will permanently wipe all current progress teams have made today. Proceed?")) return;
+  async function handleRevokeDistribution() {
+    if (!confirm("Are you sure you want to revoke the distribution? This will wipe all team progress for today.")) return;
     setDistributing(true);
     setMessage(null);
     try {
-      if (!existingTask) {
-        await createDailyTask(date, questions, questionsPerTeam);
-      } else if (existingTask.questionsPerTeam !== questionsPerTeam) {
-        await updateTaskQuestionsPerTeam(date, questionsPerTeam);
-      }
-      await forceNewDistribution(date);
-      const teams = await getTeams();
-      setMessage({ type: "success", text: `Force distributed ${questionsPerTeam} questions to each of ${teams.length} teams.` });
+      await revokeDistribution(date);
+      setMessage({ type: "success", text: "Distribution revoked successfully." });
       await loadData(date);
     } catch (err) {
       console.error(err);
-      setMessage({ type: "error", text: "Distribution failed. Check console." });
+      setMessage({ type: "error", text: "Failed to revoke distribution." });
     }
     setDistributing(false);
   }
@@ -314,37 +306,16 @@ export default function QuestionsPage() {
         </button>
       )}
 
-      {distributed && !revoked && (
+      {distributed && (
         <div className="rounded-lg border border-success/15 bg-success-bg px-4 py-3 flex items-center justify-between">
           <span className="text-[13px] text-success font-medium">✓ Questions distributed to {records.length} teams</span>
           <button 
-            onClick={() => setRevoked(true)}
-            className="text-[12px] font-medium text-danger hover:underline"
+            onClick={handleRevokeDistribution}
+            disabled={distributing}
+            className="text-[12px] font-medium text-danger hover:underline disabled:opacity-50"
           >
-            Revoke Distribution
+            {distributing ? "Revoking..." : "Revoke Distribution"}
           </button>
-        </div>
-      )}
-
-      {distributed && revoked && (
-        <div className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-4 space-y-3">
-          <p className="text-[13px] font-semibold text-danger">Distribution Revoked</p>
-          <p className="text-[12px] text-text-secondary">What would you like to do next?</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setRevoked(false)}
-              className="rounded-md bg-bg-tertiary px-4 py-2 text-[12px] font-medium text-text-primary hover:bg-bg-secondary border border-border-color transition-colors"
-            >
-              Undo (Keep old distribution)
-            </button>
-            <button
-              onClick={handleForceNewDistribution}
-              disabled={distributing}
-              className="rounded-md bg-danger px-4 py-2 text-[12px] font-medium text-white hover:bg-danger/90 transition-colors"
-            >
-              {distributing ? "Distributing..." : "Do New Distribution (Wipes Progress)"}
-            </button>
-          </div>
         </div>
       )}
     </div>

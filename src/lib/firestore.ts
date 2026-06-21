@@ -374,3 +374,11 @@ export async function forceNewDistribution(date: string): Promise<void> {
     await setDoc(doc(db, "teamDailyRecords", id), record);
   }
 }
+
+export async function revokeDistribution(date: string): Promise<void> {
+  const teams = await getTeams();
+  for (const team of teams) {
+    const id = `${team.id}_${date}`;
+    await deleteDoc(doc(db, "teamDailyRecords", id));
+  }
+}

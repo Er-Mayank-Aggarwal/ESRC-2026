@@ -131,6 +131,14 @@ export async function addQuestionToDay(date: string, text: string): Promise<void
   }
 }
 
+export async function deleteQuestionFromDay(date: string, qIdx: number): Promise<void> {
+  const task = await getDailyTask(date);
+  if (task) {
+    task.allQuestions.splice(qIdx, 1);
+    await updateDoc(doc(db, "dailyTasks", date), { allQuestions: task.allQuestions });
+  }
+}
+
 // ─── Team Daily Records ───────────────────────────────────────────────
 
 export async function getTeamDailyRecord(teamId: string, date: string): Promise<TeamDailyRecord | null> {
@@ -315,5 +323,27 @@ export async function distributeQuestions(date: string): Promise<void> {
         completionTime: null
       });
     }
+  }
+}
+
+export async function forceNewDistribution(date: string): Promise<void> {
+  const task = await getDailyTask(date);
+  if (!task || task.allQuestions.length === 0) return;
+
+  const teams = await getTeams();
+  for (const team of teams) {
+    const id = `${team.id}_${date}`;
+    const record: TeamDailyRecord = {
+      id,
+      teamId: team.id,
+      date,
+      assignedQuestionIndices: Array.from({ length: task.questionsPerTeam }, (_, i) => i),
+      questionCompletions: Array(task.questionsPerTeam).fill(false),
+      isCompleted: false,
+      completionTime: null,
+      dailyScore: 0,
+      dailyRank: 0
+    };
+    await setDoc(doc(db, "teamDailyRecords", id), record);
   }
 }

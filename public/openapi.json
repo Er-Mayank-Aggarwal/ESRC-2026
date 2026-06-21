@@ -1,0 +1,159 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ESRC 2026 API Documentation",
+    "description": "API documentation for the ESRC 2026 Firebase Firestore Database. Note: Since this project uses the Firebase Client SDK directly, these routes represent conceptual database operations rather than literal HTTP REST endpoints.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://firestore.googleapis.com/v1/projects/YOUR_PROJECT_ID/databases/(default)/documents",
+      "description": "Firebase Firestore"
+    }
+  ],
+  "paths": {
+    "/teams": {
+      "get": {
+        "summary": "Get all teams",
+        "description": "Retrieves a list of all registered teams in the competition.",
+        "responses": {
+          "200": {
+            "description": "A list of teams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Team"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teams/{teamId}": {
+      "get": {
+        "summary": "Get a specific team",
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dailyTasks": {
+      "get": {
+        "summary": "Get all daily tasks",
+        "responses": {
+          "200": {
+            "description": "A list of tasks grouped by date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyTask"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teamDailyRecords": {
+      "get": {
+        "summary": "Get team daily progress",
+        "description": "Retrieves the progress tracking for teams on given daily tasks.",
+        "responses": {
+          "200": {
+            "description": "A list of daily records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeamDailyRecord"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "teamNumber": { "type": "integer" },
+          "teamName": { "type": "string" },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalScore": { "type": "number" },
+          "password": { "type": "string" },
+          "lastActive": { "type": "string" }
+        }
+      },
+      "DailyTask": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "date": { "type": "string" },
+          "allQuestions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "questionsPerTeam": { "type": "integer" },
+          "createdAt": { "type": "string" }
+        }
+      },
+      "TeamDailyRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "teamId": { "type": "string" },
+          "date": { "type": "string" },
+          "assignedQuestionIndices": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "questionCompletions": {
+            "type": "array",
+            "items": { "type": "boolean" }
+          },
+          "isCompleted": { "type": "boolean" },
+          "completionTime": { "type": "string", "nullable": true },
+          "dailyScore": { "type": "number" },
+          "dailyRank": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

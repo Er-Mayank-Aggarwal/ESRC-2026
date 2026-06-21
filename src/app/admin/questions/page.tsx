@@ -8,6 +8,8 @@ import {
   distributeQuestions,
   updateQuestionText,
   addQuestionToDay,
+  deleteQuestionFromDay,
+  forceNewDistribution,
   getTeams,
   updateTaskQuestionsPerTeam,
 } from "@/lib/firestore";
@@ -31,6 +33,7 @@ export default function QuestionsPage() {
   const [editText, setEditText] = useState("");
   const [distributing, setDistributing] = useState(false);
   const [distributed, setDistributed] = useState(false);
+  const [revoked, setRevoked] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [viewIdx, setViewIdx] = useState(0);
 
@@ -45,6 +48,7 @@ export default function QuestionsPage() {
     setExistingTask(task);
     setRecords(recs);
     setDistributed(recs.length > 0);
+    setRevoked(false);
     if (task) {
       setQuestions(task.allQuestions);
       setQuestionsPerTeam(task.questionsPerTeam);
@@ -84,6 +88,13 @@ export default function QuestionsPage() {
     setEditText("");
   }
 
+  async function handleDeleteQuestion() {
+    if (!existingTask) return;
+    if (!confirm("Are you sure you want to delete this question?")) return;
+    await deleteQuestionFromDay(date, viewIdx);
+    await loadData(date);
+  }
+
   async function handleDistribute() {
     if (questions.length < questionsPerTeam) {
       setMessage({ type: "error", text: `Need at least ${questionsPerTeam} questions. You have ${questions.length}.` });
@@ -101,6 +112,27 @@ export default function QuestionsPage() {
       await distributeQuestions(date);
       const teams = await getTeams();
       setMessage({ type: "success", text: `Distributed ${questionsPerTeam} questions to each of ${teams.length} teams.` });
+      await loadData(date);
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: "error", text: "Distribution failed. Check console." });
+    }
+    setDistributing(false);
+  }
+
+  async function handleForceNewDistribution() {
+    if (!confirm("WARNING: This will permanently wipe all current progress teams have made today. Proceed?")) return;
+    setDistributing(true);
+    setMessage(null);
+    try {
+      if (!existingTask) {
+        await createDailyTask(date, questions, questionsPerTeam);
+      } else if (existingTask.questionsPerTeam !== questionsPerTeam) {
+        await updateTaskQuestionsPerTeam(date, questionsPerTeam);
+      }
+      await forceNewDistribution(date);
+      const teams = await getTeams();
+      setMessage({ type: "success", text: `Force distributed ${questionsPerTeam} questions to each of ${teams.length} teams.` });
       await loadData(date);
     } catch (err) {
       console.error(err);
@@ -190,12 +222,20 @@ export default function QuestionsPage() {
             <div className="flex items-start justify-between gap-3 mb-2">
               <span className="text-[10px] font-bold text-accent uppercase tracking-wider">Q{viewIdx + 1}</span>
               {editingIdx !== viewIdx && (
-                <button
-                  onClick={() => { setEditingIdx(viewIdx); setEditText(questions[viewIdx]); }}
-                  className="text-[11px] text-text-muted hover:text-accent transition-colors"
-                >
-                  Edit
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setEditingIdx(viewIdx); setEditText(questions[viewIdx]); }}
+                    className="text-[11px] text-text-muted hover:text-accent transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={handleDeleteQuestion}
+                    className="text-[11px] text-text-muted hover:text-danger transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
               )}
             </div>
 
@@ -250,7 +290,7 @@ export default function QuestionsPage() {
         </button>
       </div>
 
-      {/* Distribute */}
+      {/* Distribute / Revoke */}
       {!distributed && questions.length > 0 && (
         <button
           onClick={handleDistribute}
@@ -262,9 +302,37 @@ export default function QuestionsPage() {
         </button>
       )}
 
-      {distributed && (
-        <div className="rounded-lg border border-success/15 bg-success-bg px-4 py-2.5 text-[13px] text-success font-medium">
-          ✓ Questions distributed to {records.length} teams · {questionsPerTeam} per team
+      {distributed && !revoked && (
+        <div className="rounded-lg border border-success/15 bg-success-bg px-4 py-3 flex items-center justify-between">
+          <span className="text-[13px] text-success font-medium">✓ Questions distributed to {records.length} teams</span>
+          <button 
+            onClick={() => setRevoked(true)}
+            className="text-[12px] font-medium text-danger hover:underline"
+          >
+            Revoke Distribution
+          </button>
+        </div>
+      )}
+
+      {distributed && revoked && (
+        <div className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-4 space-y-3">
+          <p className="text-[13px] font-semibold text-danger">Distribution Revoked</p>
+          <p className="text-[12px] text-text-secondary">What would you like to do next?</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setRevoked(false)}
+              className="rounded-md bg-bg-tertiary px-4 py-2 text-[12px] font-medium text-text-primary hover:bg-bg-secondary border border-border-color transition-colors"
+            >
+              Undo (Keep old distribution)
+            </button>
+            <button
+              onClick={handleForceNewDistribution}
+              disabled={distributing}
+              className="rounded-md bg-danger px-4 py-2 text-[12px] font-medium text-white hover:bg-danger/90 transition-colors"
+            >
+              {distributing ? "Distributing..." : "Do New Distribution (Wipes Progress)"}
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: "ESRC 2026",
-  description:
-    "ESRC 2026 competition dashboard. View team tasks, rankings, and the live leaderboard.",
+  description: "ESRC 2026 Daily Challenges App",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/icon-192x192.png",
+  },
 };
 
 export default function RootLayout({
@@ -17,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full" suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans overflow-x-hidden">
+        <ServiceWorkerRegister />
         <ThemeProvider>
           <Header />
           <main className="flex-1">{children}</main>

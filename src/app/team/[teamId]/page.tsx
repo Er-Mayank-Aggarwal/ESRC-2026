@@ -93,16 +93,20 @@ export default function TeamDashboard() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8">
-      {/* Back */}
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1 text-[12px] text-text-muted hover:text-text-secondary transition-colors mb-5"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        All Teams
-      </Link>
+      {/* Header Actions */}
+      <div className="flex items-center justify-between mb-5">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 text-[12px] text-text-muted hover:text-text-secondary transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          All Teams
+        </Link>
+        <InstallPWA />
+      </div>
+
 
       {/* Team Header Card */}
       <div className="rounded-xl border border-border-color bg-bg-secondary p-5 mb-6">

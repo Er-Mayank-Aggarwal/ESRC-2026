@@ -7,6 +7,8 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useEffect, type ReactNode } from "react";
 
+import InstallPWA from "@/components/InstallPWA";
+
 function AdminGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -52,6 +54,7 @@ function AdminGuard({ children }: { children: ReactNode }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+          <InstallPWA />
           <AdminNavLink href="/admin" label="Dashboard" />
           <AdminNavLink href="/admin/questions" label="Questions" />
           <AdminNavLink href="/admin/holidays" label="Holidays" />

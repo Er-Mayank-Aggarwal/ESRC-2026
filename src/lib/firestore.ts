@@ -261,24 +261,50 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   const snapshot = await getDocs(collection(db, "teamDailyRecords"));
   const allRecords = snapshot.docs.map(d => d.data() as TeamDailyRecord);
   
-  let latestDate = "";
-  allRecords.forEach(r => {
-    if (r.date > latestDate) latestDate = r.date;
-  });
+  const uniqueDates = Array.from(new Set(allRecords.map(r => r.date))).sort();
+  const latestDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : "";
+  const prevDate = uniqueDates.length > 1 ? uniqueDates[uniqueDates.length - 2] : "";
 
   const prevScores = teams.map(t => {
     const recentRecord = allRecords.find(r => r.teamId === t.id && r.date === latestDate);
     const recentScore = recentRecord ? recentRecord.dailyScore : 0;
-    return { teamId: t.id, prevScore: t.totalScore - recentScore };
+    const prevRecord = allRecords.find(r => r.teamId === t.id && r.date === prevDate);
+    return { 
+      teamId: t.id, 
+      teamNumber: t.teamNumber,
+      prevScore: t.totalScore - recentScore,
+      prevCompletionTime: prevRecord ? prevRecord.completionTime : null
+    };
   });
 
-  prevScores.sort((a, b) => b.prevScore - a.prevScore);
+  prevScores.sort((a, b) => {
+    if (b.prevScore !== a.prevScore) return b.prevScore - a.prevScore;
+    if (!a.prevCompletionTime && !b.prevCompletionTime) return a.teamNumber - b.teamNumber;
+    if (!a.prevCompletionTime) return 1;
+    if (!b.prevCompletionTime) return -1;
+    return a.prevCompletionTime.localeCompare(b.prevCompletionTime);
+  });
+  
   const prevRanks: Record<string, number> = {};
   prevScores.forEach((ps, i) => prevRanks[ps.teamId] = i + 1);
 
-  const currentSorted = [...teams].sort((a, b) => b.totalScore - a.totalScore);
+  const teamData = teams.map(t => {
+    const recentRecord = allRecords.find(r => r.teamId === t.id && r.date === latestDate);
+    return {
+      team: t,
+      completionTime: recentRecord ? recentRecord.completionTime : null
+    };
+  });
+
+  teamData.sort((a, b) => {
+    if (b.team.totalScore !== a.team.totalScore) return b.team.totalScore - a.team.totalScore;
+    if (!a.completionTime && !b.completionTime) return a.team.teamNumber - b.team.teamNumber;
+    if (!a.completionTime) return 1;
+    if (!b.completionTime) return -1;
+    return a.completionTime.localeCompare(b.completionTime);
+  });
   
-  return currentSorted.map((t, i) => {
+  return teamData.map(({ team: t }, i) => {
     const currentRank = i + 1;
     const prevRank = prevRanks[t.id] || currentRank;
     const rankChange = latestDate ? (prevRank - currentRank) : 0;
@@ -307,12 +333,25 @@ export async function getDailyLeaderboard(date: string): Promise<LeaderboardEntr
       teamName: t.teamName,
       totalScore: record ? record.dailyScore : 0,
       rank: 0,
+      completionTime: record ? record.completionTime : null
     };
   });
 
-  entries.sort((a, b) => b.totalScore - a.totalScore);
-  entries.forEach((e, i) => e.rank = i + 1);
-  return entries;
+  entries.sort((a, b) => {
+    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    if (!a.completionTime && !b.completionTime) return a.teamNumber - b.teamNumber;
+    if (!a.completionTime) return 1;
+    if (!b.completionTime) return -1;
+    return a.completionTime.localeCompare(b.completionTime);
+  });
+  
+  return entries.map((e, i) => ({
+    teamId: e.teamId,
+    teamNumber: e.teamNumber,
+    teamName: e.teamName,
+    totalScore: e.totalScore,
+    rank: i + 1,
+  }));
 }
 
 // ─── Distribution ────────────────────────────────────────────────────

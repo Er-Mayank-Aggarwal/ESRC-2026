@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getDailyTask,
   getAllRecordsForDate,
@@ -12,8 +12,10 @@ import {
   revokeDistribution,
   getTeams,
   updateTaskQuestionsPerTeam,
+  getCompetitionDay,
 } from "@/lib/firestore";
 import type { DailyTask, TeamDailyRecord } from "@/lib/types";
+import { jsPDF } from "jspdf";
 
 function getTodayDate(): string {
   // IST is UTC+5:30
@@ -38,6 +40,9 @@ export default function QuestionsPage() {
   const [distributed, setDistributed] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [viewIdx, setViewIdx] = useState(0);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData(date);
@@ -91,7 +96,7 @@ export default function QuestionsPage() {
 
   async function handleDeleteQuestion() {
     if (!confirm("Are you sure you want to delete this question?")) return;
-    
+
     if (!existingTask) {
       const updated = [...questions];
       updated.splice(viewIdx, 1);
@@ -145,6 +150,40 @@ export default function QuestionsPage() {
     setDistributing(false);
   }
 
+  const handleDownloadPdf = async () => {
+    if (!printRef.current) return;
+    setIsGeneratingPdf(true);
+
+    try {
+      const doc = new jsPDF({
+        orientation: "p",
+        unit: "pt",
+        format: "a4"
+      });
+
+      const element = printRef.current;
+      element.style.display = "block";
+
+      const dayNumber = getCompetitionDay(date);
+
+      await doc.html(element, {
+        callback: function (pdf) {
+          pdf.save(`Challange_Questions_Day${dayNumber}.pdf`);
+          element.style.display = "none";
+          setIsGeneratingPdf(false);
+        },
+        margin: [40, 40, 40, 40],
+        autoPaging: "text",
+        width: 515, // 595.28 (A4 width in pt) - 80 (margins)
+        windowWidth: 800
+      });
+    } catch (e) {
+      console.error(e);
+      if (printRef.current) printRef.current.style.display = "none";
+      setIsGeneratingPdf(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -155,9 +194,21 @@ export default function QuestionsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-bold text-text-primary">Questions Manager</h2>
-        <p className="text-[12px] text-text-muted mt-0.5">Add questions one by one, then distribute to teams.</p>
+      <div className="flex justify-between items-start gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-text-primary">Questions Manager</h2>
+          <p className="text-[12px] text-text-muted mt-0.5">Add questions one by one, then distribute to teams.</p>
+        </div>
+        {questions.length > 0 && (
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isGeneratingPdf}
+            className="rounded-lg bg-bg-tertiary border border-border-color px-4 py-2 text-[12px] font-medium text-text-primary hover:bg-bg-primary hover:border-accent hover:text-accent transition-colors flex items-center gap-2 flex-shrink-0 cursor-pointer disabled:opacity-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            <span id="download-text">{isGeneratingPdf ? "Generating..." : "Download PDF"}</span>
+          </button>
+        )}
       </div>
 
       {/* Date + Per Team config */}
@@ -187,9 +238,8 @@ export default function QuestionsPage() {
 
       {/* Message */}
       {message && (
-        <div className={`rounded-lg px-4 py-2.5 text-[13px] font-medium border ${
-          message.type === "success" ? "bg-success-bg text-success border-success/15" : "bg-danger-bg text-danger border-danger/15"
-        }`}>
+        <div className={`rounded-lg px-4 py-2.5 text-[13px] font-medium border ${message.type === "success" ? "bg-success-bg text-success border-success/15" : "bg-danger-bg text-danger border-danger/15"
+          }`}>
           {message.text}
         </div>
       )}
@@ -207,7 +257,7 @@ export default function QuestionsPage() {
                 disabled={viewIdx === 0}
                 className="rounded p-1 text-text-muted hover:text-text-primary hover:bg-bg-tertiary disabled:opacity-30 transition-colors"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
               <span className="text-[12px] text-text-secondary tabular-nums px-1">
                 {viewIdx + 1} / {questions.length}
@@ -217,7 +267,7 @@ export default function QuestionsPage() {
                 disabled={viewIdx === questions.length - 1}
                 className="rounded p-1 text-text-muted hover:text-text-primary hover:bg-bg-tertiary disabled:opacity-30 transition-colors"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
               </button>
             </div>
           </div>
@@ -309,7 +359,7 @@ export default function QuestionsPage() {
       {distributed && (
         <div className="rounded-lg border border-success/15 bg-success-bg px-4 py-3 flex items-center justify-between">
           <span className="text-[13px] text-success font-medium">✓ Questions distributed to {records.length} teams</span>
-          <button 
+          <button
             onClick={handleRevokeDistribution}
             disabled={distributing}
             className="text-[12px] font-medium text-danger hover:underline disabled:opacity-50"
@@ -318,6 +368,31 @@ export default function QuestionsPage() {
           </button>
         </div>
       )}
+
+      {/* Hidden print area for PDF Generation */}
+      <div
+        ref={printRef}
+        style={{
+          display: "none",
+          width: "800px",
+          background: "white",
+          color: "black",
+          padding: "30px",
+          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+        }}
+      >
+        <h1 style={{ fontSize: "28px", fontWeight: "bold", marginBottom: "35px", borderBottom: "2px solid #eaeaea", paddingBottom: "12px" }}>
+          Challenge Questions - Day {getCompetitionDay(date)}
+        </h1>
+        <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+          {questions.map((q, i) => (
+            <div key={i} style={{ display: "flex", gap: "12px", fontSize: "16px", lineHeight: "1.6", color: "#111" }}>
+              <div style={{ fontWeight: "bold", color: "#000", fontSize: "17px", minWidth: "40px" }}>Q{i + 1}.</div>
+              <div style={{ whiteSpace: "pre-wrap", flex: 1 }}>{q}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

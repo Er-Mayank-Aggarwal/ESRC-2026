@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [todayRecords, setTodayRecords] = useState<TeamDailyRecord[]>([]);
   const [hasTasksToday, setHasTasksToday] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showPortal, setShowPortal] = useState(false);
 
   useEffect(() => {
     const today = getTodayDateIST();
@@ -27,13 +28,6 @@ export default function AdminDashboard() {
   }, []);
 
   const completedCount = todayRecords.filter((r) => r.isCompleted).length;
-  const avgScore =
-    todayRecords.length > 0
-      ? Math.round(
-          todayRecords.reduce((s, r) => s + r.dailyScore, 0) /
-            todayRecords.length
-        )
-      : 0;
 
   if (loading) {
     return (
@@ -58,7 +52,13 @@ export default function AdminDashboard() {
           label="Completed"
           value={`${completedCount}/${todayRecords.length || teams.length}`}
         />
-        <StatCard label="Avg Score" value={avgScore} />
+        <button
+          onClick={() => setShowPortal(true)}
+          className="rounded-xl border border-border-color bg-bg-secondary p-4 text-left hover:border-accent/40 hover:shadow-[var(--card-shadow-hover)] transition-all"
+        >
+          <div className="text-xs text-text-muted mb-1">External</div>
+          <div className="text-xl font-bold text-text-primary">Portal</div>
+        </button>
       </div>
 
       {/* Quick Actions */}
@@ -115,6 +115,29 @@ export default function AdminDashboard() {
       <div className="rounded-xl border border-border-color bg-bg-secondary overflow-hidden pt-4 pb-8">
         <LeaderboardPage />
       </div>
+
+      {showPortal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full h-full max-w-7xl max-h-[90vh] bg-bg-primary rounded-2xl shadow-2xl border border-border-color flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border-color bg-bg-secondary">
+              <h2 className="text-sm font-bold text-text-primary">ESRC Portal</h2>
+              <button
+                onClick={() => setShowPortal(false)}
+                className="rounded-full p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div className="flex-1 bg-bg-primary">
+              <iframe 
+                src="/esrc26-portal/" 
+                className="w-full h-full border-none"
+                title="ESRC Portal"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

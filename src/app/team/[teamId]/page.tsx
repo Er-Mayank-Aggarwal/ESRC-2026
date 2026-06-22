@@ -176,7 +176,7 @@ function ExternalTab() {
   return (
     <div className="rounded-xl border border-border-color bg-bg-secondary h-[600px] overflow-hidden">
       <iframe 
-        src="http://68.178.167.68:8080/esrc26/" 
+        src="/esrc26-portal/" 
         className="w-full h-full border-none"
         title="ESRC Portal"
       />

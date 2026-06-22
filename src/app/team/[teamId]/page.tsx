@@ -387,7 +387,12 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-semibold text-accent">{record.dailyScore}</span>
+                <span 
+                  className={`text-[13px] font-semibold ${getCompetitionDay(record.date) === 2 ? "text-text-muted line-through" : "text-accent"}`}
+                  title={getCompetitionDay(record.date) === 2 ? "Day 2 score is excluded from overall total" : undefined}
+                >
+                  {record.dailyScore}
+                </span>
                 <svg
                   className="h-3.5 w-3.5 text-text-muted transition-transform group-open:rotate-180"
                   xmlns="http://www.w3.org/2000/svg"

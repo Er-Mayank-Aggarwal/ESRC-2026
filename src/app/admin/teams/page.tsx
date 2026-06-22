@@ -177,7 +177,6 @@ export default function TeamsProgressPage() {
                         className="w-14 rounded border border-border-color bg-bg-primary py-1 px-2 text-[13px] text-text-primary text-center outline-none focus:border-accent"
                         autoFocus
                       />
-                      <span className="text-[11px] text-text-muted">/100</span>
                       <button
                         onClick={() => handleSaveScore(team.id)}
                         disabled={savingScore[team.id]}
@@ -189,7 +188,7 @@ export default function TeamsProgressPage() {
                   ) : (
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-text-primary">
-                        {record.dailyScore}<span className="text-[11px] text-text-muted font-normal">/100</span>
+                        {record.dailyScore}
                       </span>
                       <button
                         onClick={() => setEditingScore((p) => ({ ...p, [team.id]: true }))}

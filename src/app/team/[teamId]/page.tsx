@@ -53,6 +53,10 @@ export default function TeamDashboard() {
       checkIsHoliday(today),
     ])
       .then(([t, tr, ar, lb, hol]) => {
+        // Calculate total score dynamically from all records to prevent sync issues
+        if (t) {
+          t.totalScore = ar.reduce((sum, r) => sum + (getCompetitionDay(r.date) !== 2 ? (r.dailyScore || 0) : 0), 0);
+        }
         setTeam(t);
         setTodayRecord(tr);
         setAllRecords(ar);
@@ -251,7 +255,7 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
         {record.dailyScore > 0 && (
           <div className="flex items-center justify-between rounded-lg border border-border-color bg-bg-secondary px-4 py-2.5 min-w-[140px]">
             <span className="text-[13px] text-text-secondary">Score</span>
-            <span className="text-lg font-bold text-accent">{record.dailyScore}<span className="text-text-muted font-normal text-[12px]">/100</span></span>
+            <span className="text-lg font-bold text-accent">{record.dailyScore}</span>
           </div>
         )}
       </div>
@@ -356,7 +360,7 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-semibold text-accent">{record.dailyScore}<span className="text-text-muted font-normal text-[11px]">/100</span></span>
+                <span className="text-[13px] font-semibold text-accent">{record.dailyScore}</span>
                 <svg
                   className="h-3.5 w-3.5 text-text-muted transition-transform group-open:rotate-180"
                   xmlns="http://www.w3.org/2000/svg"
@@ -417,7 +421,7 @@ function StatsTab({
     { label: "Overall Rank", value: `#${overallRank}`, highlight: true },
     { label: "Today's Rank", value: todayRank === "—" ? "—" : `#${todayRank}`, highlight: false },
     { label: "Total Score", value: team.totalScore, highlight: true },
-    { label: "Today's Score", value: todayRecord ? `${todayRecord.dailyScore}/100` : "—", highlight: false },
+    { label: "Today's Score", value: todayRecord ? `${todayRecord.dailyScore}` : "—", highlight: false },
     { label: "Days Active", value: totalDays, highlight: false },
     { label: "Members", value: team.members.length, highlight: false },
   ];

@@ -266,9 +266,14 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   const prevDate = uniqueDates.length > 1 ? uniqueDates[uniqueDates.length - 2] : "";
 
   const prevScores = teams.map(t => {
-    const recentRecord = allRecords.find(r => r.teamId === t.id && r.date === latestDate);
+    const teamRecords = allRecords.filter(r => r.teamId === t.id);
+    const dynamicTotalScore = teamRecords.reduce((sum, r) => sum + (getCompetitionDay(r.date) !== 2 ? (r.dailyScore || 0) : 0), 0);
+    // Overwrite the team's total score with the dynamic one to prevent sync issues
+    t.totalScore = dynamicTotalScore;
+
+    const recentRecord = teamRecords.find(r => r.date === latestDate);
     const recentScore = recentRecord ? recentRecord.dailyScore : 0;
-    const prevRecord = allRecords.find(r => r.teamId === t.id && r.date === prevDate);
+    const prevRecord = teamRecords.find(r => r.date === prevDate);
     return { 
       teamId: t.id, 
       teamNumber: t.teamNumber,

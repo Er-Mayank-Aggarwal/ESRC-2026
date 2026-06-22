@@ -85,6 +85,7 @@ export default function HomePage() {
             <Link
               key={team.id}
               href={`/team/${team.id}`}
+              prefetch={false}
               id={`team-card-${team.id}`}
               className="group relative flex items-center gap-3 rounded-lg border border-border-color bg-bg-secondary p-3.5 hover:border-accent/30 hover:bg-accent-glow transition-all shadow-[var(--card-shadow)] hover:shadow-[var(--card-shadow-hover)]"
             >

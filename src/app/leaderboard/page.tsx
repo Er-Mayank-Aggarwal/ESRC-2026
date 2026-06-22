@@ -112,6 +112,7 @@ export default function LeaderboardPage() {
                 <Link
                   key={entry.teamId}
                   href={`/team/${entry.teamId}`}
+                  prefetch={false}
                   className={`rounded-xl border ${colors[rank as 1|2|3]} ${heights[rank as 1|2|3]} pb-4 px-3 text-center hover:shadow-[var(--card-shadow-hover)] transition-all`}
                 >
                   <div className="text-2xl mb-1">{icons[rank as 1|2|3]}</div>
@@ -149,7 +150,7 @@ export default function LeaderboardPage() {
                       </div>
                     </td>
                     <td className="px-4 py-2.5">
-                      <Link href={`/team/${entry.teamId}`} className="text-[13px] font-medium text-text-primary hover:text-accent transition-colors">
+                      <Link href={`/team/${entry.teamId}`} prefetch={false} className="text-[13px] font-medium text-text-primary hover:text-accent transition-colors">
                         {entry.teamName}
                       </Link>
                     </td>

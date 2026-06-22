@@ -150,6 +150,32 @@ export default function QuestionsPage() {
     setDistributing(false);
   }
 
+  async function handleSeedData() {
+    if (!confirm("Seed 5 test questions for all days before 22 except Sunday/Holidays?")) return;
+    setDistributing(true);
+    setMessage(null);
+    try {
+      const datesToSeed = ['2026-06-15', '2026-06-16', '2026-06-18', '2026-06-19', '2026-06-20'];
+      const testQs = [
+        "Test Question 1: Describe the vulnerability",
+        "Test Question 2: Decrypt this payload",
+        "Test Question 3: Find the flag",
+        "Test Question 4: Analyze the network capture",
+        "Test Question 5: Provide the solution script"
+      ];
+      for (const d of datesToSeed) {
+        await createDailyTask(d, testQs, 5);
+        await distributeQuestions(d);
+      }
+      setMessage({ type: "success", text: "Successfully seeded 5 test questions for previous days!" });
+      await loadData(date);
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: "error", text: "Failed to seed data." });
+    }
+    setDistributing(false);
+  }
+
   const handleDownloadPdf = async () => {
     if (!printRef.current) return;
     setIsGeneratingPdf(true);
@@ -199,16 +225,25 @@ export default function QuestionsPage() {
           <h2 className="text-lg font-bold text-text-primary">Questions Manager</h2>
           <p className="text-[12px] text-text-muted mt-0.5">Add questions one by one, then distribute to teams.</p>
         </div>
-        {questions.length > 0 && (
+        <div className="flex gap-2">
           <button
-            onClick={handleDownloadPdf}
-            disabled={isGeneratingPdf}
+            onClick={handleSeedData}
+            disabled={distributing}
             className="rounded-lg bg-bg-tertiary border border-border-color px-4 py-2 text-[12px] font-medium text-text-primary hover:bg-bg-primary hover:border-accent hover:text-accent transition-colors flex items-center gap-2 flex-shrink-0 cursor-pointer disabled:opacity-50"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-            <span id="download-text">{isGeneratingPdf ? "Generating..." : "Download PDF"}</span>
+            <span>{distributing ? "Seeding..." : "Seed Past Questions"}</span>
           </button>
-        )}
+          {questions.length > 0 && (
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="rounded-lg bg-bg-tertiary border border-border-color px-4 py-2 text-[12px] font-medium text-text-primary hover:bg-bg-primary hover:border-accent hover:text-accent transition-colors flex items-center gap-2 flex-shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              <span id="download-text">{isGeneratingPdf ? "Generating..." : "Download PDF"}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Date + Per Team config */}

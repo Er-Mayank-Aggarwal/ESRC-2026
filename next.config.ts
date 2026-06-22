@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/esrc26-portal/:path*",
+        source: "/esrc26/:path*",
         destination: "http://68.178.167.68:8080/esrc26/:path*",
       },
     ];

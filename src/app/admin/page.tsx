@@ -130,7 +130,7 @@ export default function AdminDashboard() {
             </div>
             <div className="flex-1 bg-bg-primary">
               <iframe 
-                src="/esrc26-portal/" 
+                src="/esrc26/" 
                 className="w-full h-full border-none"
                 title="ESRC Portal"
               />

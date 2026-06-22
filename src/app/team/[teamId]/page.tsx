@@ -172,10 +172,28 @@ export default function TeamDashboard() {
 }
 
 function ExternalTab() {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleIframeLoad = () => {
+    try {
+      const iframeDoc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+      if (iframeDoc) {
+        const links = iframeDoc.querySelectorAll('a[target="_blank"]');
+        links.forEach(link => {
+          link.setAttribute('target', '_self');
+        });
+      }
+    } catch (e) {
+      // Ignore cross-origin errors if they ever occur
+    }
+  };
+
   return (
     <div className="rounded-xl border border-border-color bg-bg-secondary h-[600px] overflow-hidden">
-      <iframe
-        src="/esrc26/"
+      <iframe 
+        ref={iframeRef}
+        onLoad={handleIframeLoad}
+        src="/esrc26/" 
         className="w-full h-full border-none"
         title="ESRC Portal"
       />

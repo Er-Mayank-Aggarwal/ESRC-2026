@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { getTeams, getDailyTask, getAllRecordsForDate } from "@/lib/firestore";
 import type { Team, TeamDailyRecord } from "@/lib/types";
@@ -14,6 +14,21 @@ export default function AdminDashboard() {
   const [hasTasksToday, setHasTasksToday] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPortal, setShowPortal] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleIframeLoad = () => {
+    try {
+      const iframeDoc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+      if (iframeDoc) {
+        const links = iframeDoc.querySelectorAll('a[target="_blank"]');
+        links.forEach(link => {
+          link.setAttribute('target', '_self');
+        });
+      }
+    } catch (e) {
+      // Ignore cross-origin errors if they ever occur
+    }
+  };
 
   useEffect(() => {
     const today = getTodayDateIST();
@@ -130,6 +145,8 @@ export default function AdminDashboard() {
             </div>
             <div className="flex-1 bg-bg-primary">
               <iframe 
+                ref={iframeRef}
+                onLoad={handleIframeLoad}
                 src="/esrc26/" 
                 className="w-full h-full border-none"
                 title="ESRC Portal"

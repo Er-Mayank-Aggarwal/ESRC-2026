@@ -370,6 +370,31 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
           );
         }
 
+        const isBefore22 = record.date < "2026-06-22";
+
+        if (isBefore22) {
+          return (
+            <div key={record.id} className="rounded-lg border border-border-color bg-bg-secondary overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-[13px] font-medium text-text-primary">
+                    <span className="text-text-muted font-normal mr-1">Day {getCompetitionDay(record.date)} ·</span>
+                    {record.date}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span 
+                    className={`text-[13px] font-semibold ${getCompetitionDay(record.date) === 2 ? "text-text-muted line-through" : "text-accent"}`}
+                    title={getCompetitionDay(record.date) === 2 ? "Day 2 score is excluded from overall total" : undefined}
+                  >
+                    {record.dailyScore}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         const questions = tasks[record.date] || [];
         return (
           <details key={record.id} className="group rounded-lg border border-border-color bg-bg-secondary overflow-hidden">

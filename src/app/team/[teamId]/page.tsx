@@ -90,7 +90,7 @@ export default function TeamDashboard() {
   }
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "tasks", label: `Today's Tasks (Day ${getCompetitionDay(getTodayDate())})` },
+    { key: "tasks", label: `(Day ${getCompetitionDay(getTodayDate())})` },
     { key: "history", label: "History" },
     { key: "stats", label: "Statistics" },
     { key: "external", label: "Portal" },
@@ -148,11 +148,10 @@ export default function TeamDashboard() {
             key={tab.key}
             id={`tab-${tab.key}`}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 rounded-md px-3 py-1.5 text-[12px] font-medium transition-all ${
-              activeTab === tab.key
+            className={`flex-1 rounded-md px-3 py-1.5 text-[12px] font-medium transition-all ${activeTab === tab.key
                 ? "bg-bg-primary text-text-primary shadow-sm"
                 : "text-text-muted hover:text-text-secondary"
-            }`}
+              }`}
           >
             {tab.label}
           </button>
@@ -175,8 +174,8 @@ export default function TeamDashboard() {
 function ExternalTab() {
   return (
     <div className="rounded-xl border border-border-color bg-bg-secondary h-[600px] overflow-hidden">
-      <iframe 
-        src="/esrc26/" 
+      <iframe
+        src="/esrc26/"
         className="w-full h-full border-none"
         title="ESRC Portal"
       />
@@ -209,7 +208,7 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
   // For the user dashboard, since it's client-side we'll do a quick fetch
   // This is a bit of a hack but works for the in-memory store
   const [questions, setQuestions] = useState<string[]>([]);
-  
+
   useEffect(() => {
     // Import here to avoid circular dependencies at the top level
     import("@/lib/firestore").then(({ getDailyTask }) => {
@@ -233,11 +232,10 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Status */}
         <div
-          className={`flex-1 flex items-center justify-between rounded-lg border px-4 py-2.5 ${
-            record.isCompleted
+          className={`flex-1 flex items-center justify-between rounded-lg border px-4 py-2.5 ${record.isCompleted
               ? "border-success/15 bg-success-bg text-success"
               : "border-warning/15 bg-warning-bg text-warning"
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2 text-[13px] font-medium">
             {record.isCompleted ? (
@@ -281,14 +279,14 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
               <span className="rounded bg-success/10 px-1.5 py-0.5 text-[10px] font-semibold text-success">✓</span>
             )}
           </div>
-          
+
           <div className="flex items-center gap-1">
             <button
               onClick={() => setQIdx(Math.max(0, qIdx - 1))}
               disabled={qIdx === 0}
               className="rounded p-1 text-text-muted hover:text-text-primary hover:bg-bg-tertiary disabled:opacity-30 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             </button>
             <span className="text-[12px] text-text-secondary tabular-nums px-1">
               {qIdx + 1} / {totalQ}
@@ -298,11 +296,11 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
               disabled={qIdx === totalQ - 1}
               className="rounded p-1 text-text-muted hover:text-text-primary hover:bg-bg-tertiary disabled:opacity-30 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
             </button>
           </div>
         </div>
-        
+
         <div className="p-5">
           <p className="text-[14px] text-text-primary leading-relaxed">{qText}</p>
         </div>
@@ -341,7 +339,7 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
       {records.map((record) => {
         const isSunday = new Date(record.date + "T00:00:00Z").getUTCDay() === 0;
         const isHoliday = isSunday || holidays.includes(record.date);
-        
+
         if (isHoliday) {
           return (
             <div key={record.id} className="rounded-lg border border-success/15 bg-success-bg/50 px-4 py-3 flex items-center justify-between">
@@ -364,9 +362,8 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
                   {record.date}
                 </span>
                 <span
-                  className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                    record.isCompleted ? "bg-success-bg text-success" : "bg-warning-bg text-warning"
-                  }`}
+                  className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${record.isCompleted ? "bg-success-bg text-success" : "bg-warning-bg text-warning"
+                    }`}
                 >
                   {record.isCompleted ? "Done" : "Pending"}
                 </span>
@@ -495,9 +492,8 @@ function LeaderboardTab({ entries, currentTeamId }: { entries: LeaderboardEntry[
           {entries.map((entry) => (
             <tr
               key={entry.teamId}
-              className={`border-b border-border-subtle last:border-b-0 ${
-                entry.teamId === currentTeamId ? "bg-accent-glow" : ""
-              }`}
+              className={`border-b border-border-subtle last:border-b-0 ${entry.teamId === currentTeamId ? "bg-accent-glow" : ""
+                }`}
             >
               <td className="px-4 py-2.5">
                 <div className="flex items-center gap-1.5">

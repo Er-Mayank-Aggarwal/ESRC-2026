@@ -15,7 +15,7 @@ import {
 import type { Team, TeamDailyRecord, LeaderboardEntry } from "@/lib/types";
 import { getTodayDateIST } from "@/lib/utils";
 
-type Tab = "tasks" | "history" | "stats" | "leaderboard";
+type Tab = "tasks" | "history" | "stats" | "external";
 
 function getTodayDate(): string {
   return getTodayDateIST();
@@ -93,7 +93,7 @@ export default function TeamDashboard() {
     { key: "tasks", label: `Today's Tasks (Day ${getCompetitionDay(getTodayDate())})` },
     { key: "history", label: "History" },
     { key: "stats", label: "Statistics" },
-    { key: "leaderboard", label: "Leaderboard" },
+    { key: "external", label: "Portal" },
   ];
 
   return (
@@ -166,8 +166,20 @@ export default function TeamDashboard() {
         {activeTab === "stats" && (
           <StatsTab team={team} todayRank={todayRank} overallRank={myRank} todayRecord={todayRecord} totalDays={allRecords.length} />
         )}
-        {activeTab === "leaderboard" && <LeaderboardTab entries={leaderboard} currentTeamId={teamId} />}
+        {activeTab === "external" && <ExternalTab />}
       </div>
+    </div>
+  );
+}
+
+function ExternalTab() {
+  return (
+    <div className="rounded-xl border border-border-color bg-bg-secondary h-[600px] overflow-hidden">
+      <iframe 
+        src="http://68.178.167.68:8080/esrc26/" 
+        className="w-full h-full border-none"
+        title="ESRC Portal"
+      />
     </div>
   );
 }

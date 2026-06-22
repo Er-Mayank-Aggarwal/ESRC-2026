@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       fallback: [
         {
           source: "/:path*",
-          destination: "http://68.178.167.68:8080/:path*",
+          destination: "http://68.178.167.68:8080/esrc26/:path*",
         },
       ],
     };

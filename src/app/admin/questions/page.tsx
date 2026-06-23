@@ -382,7 +382,7 @@ export default function QuestionsPage() {
         }}
       >
         <h1 style={{ fontSize: "28px", fontWeight: "bold", marginBottom: "35px", borderBottom: "2px solid #eaeaea", paddingBottom: "12px" }}>
-          Challenge Questions - Day {getCompetitionDay(date)}
+          Questions - Day {getCompetitionDay(date)}
         </h1>
         <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
           {questions.map((q, i) => (

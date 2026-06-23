@@ -9,8 +9,9 @@ import {
   markTaskComplete,
   markTaskIncomplete,
   updateDailyScore,
+  updateQuestionRemark,
 } from "@/lib/firestore";
-import type { Team, DailyTask, TeamDailyRecord } from "@/lib/types";
+import type { Team, DailyTask, TeamDailyRecord, QuestionRemark } from "@/lib/types";
 import { getTodayDateIST } from "@/lib/utils";
 
 function getTodayDate(): string {
@@ -22,6 +23,12 @@ function formatTime(iso: string | null): string {
   return new Date(iso).toLocaleString("en-IN", { timeStyle: "short", dateStyle: "medium" });
 }
 
+const REMARK_OPTIONS: { value: QuestionRemark; label: string; color: string; activeColor: string }[] = [
+  { value: "excellent", label: "Excellent", color: "text-text-muted hover:text-success hover:bg-success-bg", activeColor: "bg-success-bg text-success border-success/20" },
+  { value: "good", label: "Good", color: "text-text-muted hover:text-accent hover:bg-accent-glow", activeColor: "bg-accent-glow text-accent border-accent/20" },
+  { value: "needs-work", label: "Needs Work", color: "text-text-muted hover:text-warning hover:bg-warning-bg", activeColor: "bg-warning-bg text-warning border-warning/20" },
+];
+
 export default function TeamsProgressPage() {
   const [date, setDate] = useState(getTodayDate());
   const [teams, setTeams] = useState<Team[]>([]);
@@ -31,8 +38,8 @@ export default function TeamsProgressPage() {
   const [scores, setScores] = useState<Record<string, string>>({});
   const [savingScore, setSavingScore] = useState<Record<string, boolean>>({});
   const [editingScore, setEditingScore] = useState<Record<string, boolean>>({});
-  // Track which question each team card is showing
   const [teamQIdx, setTeamQIdx] = useState<Record<string, number>>({});
+  const [savingRemark, setSavingRemark] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadData(date);
@@ -51,31 +58,71 @@ export default function TeamsProgressPage() {
     setLoading(false);
   }
 
+  // Day-wise: check if THIS day's task is an event day
+  const isEventDay = task?.isEventDay === true;
   const getRecord = (teamId: string) => records.find((r) => r.teamId === teamId);
 
+  // Helper to update a single record in state without full reload
+  function updateRecordInState(teamId: string, updater: (rec: TeamDailyRecord) => TeamDailyRecord) {
+    setRecords(prev => prev.map(r => r.teamId === teamId ? updater({ ...r }) : r));
+  }
+
   async function handleToggleQuestion(teamId: string, qLocalIdx: number) {
+    // Optimistic update
+    updateRecordInState(teamId, (rec) => {
+      const newCompletions = [...rec.questionCompletions];
+      newCompletions[qLocalIdx] = !newCompletions[qLocalIdx];
+      const allDone = newCompletions.every(Boolean);
+      return {
+        ...rec,
+        questionCompletions: newCompletions,
+        isCompleted: allDone,
+        completionTime: allDone ? new Date().toISOString() : rec.completionTime,
+      };
+    });
     await toggleQuestionCompletion(teamId, date, qLocalIdx);
-    await loadData(date);
   }
 
   async function handleToggleAll(teamId: string) {
     const record = getRecord(teamId);
     if (!record) return;
-    if (record.isCompleted) {
+    const wasCompleted = record.isCompleted;
+    // Optimistic update
+    updateRecordInState(teamId, (rec) => ({
+      ...rec,
+      questionCompletions: rec.questionCompletions.map(() => !wasCompleted),
+      isCompleted: !wasCompleted,
+      completionTime: !wasCompleted ? new Date().toISOString() : null,
+    }));
+    if (wasCompleted) {
       await markTaskIncomplete(teamId, date);
     } else {
       await markTaskComplete(teamId, date);
     }
-    await loadData(date);
   }
 
   async function handleSaveScore(teamId: string) {
     const val = scores[teamId] || "0";
     setSavingScore((p) => ({ ...p, [teamId]: true }));
     await updateDailyScore(teamId, date, val);
-    await loadData(date);
+    // Update score in local state
+    const numScore = parseInt(val) || 0;
+    updateRecordInState(teamId, (rec) => ({ ...rec, dailyScore: numScore }));
     setSavingScore((p) => ({ ...p, [teamId]: false }));
     setEditingScore((p) => ({ ...p, [teamId]: false }));
+  }
+
+  async function handleSetRemark(teamId: string, qLocalIdx: number, remark: QuestionRemark) {
+    const key = `${teamId}_${qLocalIdx}`;
+    setSavingRemark((p) => ({ ...p, [key]: true }));
+    // Optimistic update
+    updateRecordInState(teamId, (rec) => {
+      const newRemarks = [...(rec.questionRemarks || Array(rec.questionCompletions.length).fill(null))];
+      newRemarks[qLocalIdx] = remark;
+      return { ...rec, questionRemarks: newRemarks };
+    });
+    await updateQuestionRemark(teamId, date, qLocalIdx, remark);
+    setSavingRemark((p) => ({ ...p, [key]: false }));
   }
 
   function getQuestionText(record: TeamDailyRecord, localIdx: number): string {
@@ -97,7 +144,9 @@ export default function TeamsProgressPage() {
       <div className="space-y-5">
         <div>
           <h2 className="text-lg font-bold text-text-primary">Team Progress</h2>
-          <p className="text-[12px] text-text-muted mt-0.5">Mark questions complete and assign scores.</p>
+          <p className="text-[12px] text-text-muted mt-0.5">
+            {isEventDay ? "Mark questions complete and assign scores." : "Mark questions complete and give remarks."}
+          </p>
         </div>
         <div>
           <label htmlFor="p-date" className="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">Date</label>
@@ -116,7 +165,9 @@ export default function TeamsProgressPage() {
       <div className="flex items-end justify-between">
         <div>
           <h2 className="text-lg font-bold text-text-primary">Team Progress</h2>
-          <p className="text-[12px] text-text-muted mt-0.5">Mark questions complete and assign scores.</p>
+          <p className="text-[12px] text-text-muted mt-0.5">
+            {isEventDay ? "Mark questions complete and assign scores." : "Mark questions complete and give remarks."}
+          </p>
         </div>
         <div>
           <label htmlFor="p-date2" className="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">Date</label>
@@ -124,6 +175,14 @@ export default function TeamsProgressPage() {
             className="rounded-lg border border-border-color bg-bg-secondary py-1.5 px-3 text-[13px] text-text-primary outline-none focus:border-accent" />
         </div>
       </div>
+
+      {/* Mode indicator */}
+      {!isEventDay && (
+        <div className="rounded-lg border border-border-color bg-bg-secondary px-4 py-2.5 flex items-center gap-2">
+          <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Mode:</span>
+          <span className="text-[12px] font-medium text-text-secondary">Normal Day — Remarks Only</span>
+        </div>
+      )}
 
       <div className="space-y-2.5">
         {teams.map((team) => {
@@ -133,6 +192,8 @@ export default function TeamsProgressPage() {
           const completedCount = record.questionCompletions.filter(Boolean).length;
           const totalQ = record.assignedQuestionIndices.length;
           const qIdx = teamQIdx[team.id] ?? 0;
+          const currentRemark = record.questionRemarks?.[qIdx] || null;
+          const remarkKey = `${team.id}_${qIdx}`;
 
           return (
             <div key={team.id} className="rounded-xl border border-border-color bg-bg-secondary overflow-hidden">
@@ -166,37 +227,41 @@ export default function TeamsProgressPage() {
                     {record.isCompleted ? "✓ All Done" : "Mark All Done"}
                   </button>
 
-                  {/* Score */}
-                  {editingScore[team.id] ? (
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={scores[team.id] ?? "0"}
-                        onChange={(e) => setScores((p) => ({ ...p, [team.id]: e.target.value }))}
-                        className="w-14 rounded border border-border-color bg-bg-primary py-1 px-2 text-[13px] text-text-primary text-center outline-none focus:border-accent"
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => handleSaveScore(team.id)}
-                        disabled={savingScore[team.id]}
-                        className="rounded px-2 py-1 text-[11px] font-medium bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
-                      >
-                        {savingScore[team.id] ? "..." : "Save"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-text-primary">
-                        {record.dailyScore}
-                      </span>
-                      <button
-                        onClick={() => setEditingScore((p) => ({ ...p, [team.id]: true }))}
-                        className="rounded px-2 py-1 text-[11px] font-medium bg-bg-tertiary text-text-muted hover:text-text-primary transition-colors"
-                      >
-                        Edit Score
-                      </button>
-                    </div>
+                  {/* Score — only on event days */}
+                  {isEventDay && (
+                    <>
+                      {editingScore[team.id] ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={scores[team.id] ?? "0"}
+                            onChange={(e) => setScores((p) => ({ ...p, [team.id]: e.target.value }))}
+                            className="w-14 rounded border border-border-color bg-bg-primary py-1 px-2 text-[13px] text-text-primary text-center outline-none focus:border-accent"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleSaveScore(team.id)}
+                            disabled={savingScore[team.id]}
+                            className="rounded px-2 py-1 text-[11px] font-medium bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
+                          >
+                            {savingScore[team.id] ? "..." : "Save"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-text-primary">
+                            {record.dailyScore}
+                          </span>
+                          <button
+                            onClick={() => setEditingScore((p) => ({ ...p, [team.id]: true }))}
+                            className="rounded px-2 py-1 text-[11px] font-medium bg-bg-tertiary text-text-muted hover:text-text-primary transition-colors"
+                          >
+                            Edit Score
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -238,6 +303,27 @@ export default function TeamsProgressPage() {
                 </div>
 
                 <p className="text-[13px] text-text-primary leading-relaxed">{getQuestionText(record, qIdx)}</p>
+
+                {/* Remark buttons — only on normal days */}
+                {!isEventDay && (
+                  <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border-subtle">
+                    <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider mr-1">Remark:</span>
+                    {REMARK_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => handleSetRemark(team.id, qIdx, currentRemark === opt.value ? null : opt.value)}
+                        disabled={savingRemark[remarkKey]}
+                        className={`rounded-md px-2.5 py-1 text-[11px] font-medium border transition-all disabled:opacity-50 ${
+                          currentRemark === opt.value
+                            ? opt.activeColor
+                            : `border-border-color ${opt.color}`
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );

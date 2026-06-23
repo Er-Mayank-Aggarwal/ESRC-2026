@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, deleteDoc } from "firebase/firestore";
-import type { Team, DailyTask, TeamDailyRecord, LeaderboardEntry } from "./types";
+import type { Team, DailyTask, TeamDailyRecord, LeaderboardEntry, EventMode, QuestionRemark } from "./types";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -23,6 +23,7 @@ export function getCompetitionDay(dateString: string): number {
 }
 
 import { seedTeams as realTeamsData, seedRecords } from "./seedData";
+import { getTodayDateIST } from "./utils";
 
 export async function seedTeamsIfEmpty() {
   const snapshot = await getDocs(collection(db, "teams"));
@@ -80,6 +81,36 @@ export async function checkIsHoliday(date: string): Promise<boolean> {
   if (custom.includes(date)) return true;
   const d = new Date(date + "T00:00:00Z");
   return d.getUTCDay() === 0; // Sunday
+}
+
+// ─── Event Mode ───────────────────────────────────────────────────────
+
+export async function getEventMode(): Promise<EventMode> {
+  const d = await getDoc(doc(db, "config", "eventMode"));
+  if (!d.exists()) return { mode: "off" };
+  const data = d.data() as EventMode;
+  
+  // Automatically reset to "off" if the date rolls over
+  const today = getTodayDateIST();
+  if (data.date && data.date !== today) {
+    return { mode: "off" };
+  }
+  
+  return data;
+}
+
+export async function setEventMode(eventMode: EventMode): Promise<void> {
+  const today = getTodayDateIST();
+  eventMode.date = today;
+  await setDoc(doc(db, "config", "eventMode"), eventMode);
+  
+  // Mark/unmark today's DailyTask as an event day
+  const task = await getDailyTask(today);
+  if (task) {
+    await updateDoc(doc(db, "dailyTasks", today), {
+      isEventDay: eventMode.mode !== "off"
+    });
+  }
 }
 
 // ─── Daily Tasks ──────────────────────────────────────────────────────
@@ -179,6 +210,7 @@ export async function createTeamDailyRecord(teamId: string, date: string, numQue
     date,
     assignedQuestionIndices,
     questionCompletions: Array(numQuestions).fill(false),
+    questionRemarks: Array(numQuestions).fill(null),
     isCompleted: false,
     completionTime: null,
     dailyScore: 0,
@@ -199,6 +231,18 @@ export async function toggleQuestionCompletion(teamId: string, date: string, qId
     questionCompletions: record.questionCompletions,
     isCompleted: record.isCompleted,
     completionTime: record.completionTime,
+  });
+}
+
+export async function updateQuestionRemark(teamId: string, date: string, qLocalIdx: number, remark: QuestionRemark): Promise<void> {
+  const record = await getTeamDailyRecord(teamId, date);
+  if (!record) return;
+  
+  const remarks = record.questionRemarks || Array(record.questionCompletions.length).fill(null);
+  remarks[qLocalIdx] = remark;
+  
+  await updateDoc(doc(db, "teamDailyRecords", record.id), {
+    questionRemarks: remarks,
   });
 }
 
@@ -259,7 +303,14 @@ export async function updateDailyScore(teamId: string, date: string, scoreStr: s
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   const teams = await getTeams();
   const snapshot = await getDocs(collection(db, "teamDailyRecords"));
-  const allRecords = snapshot.docs.map(d => d.data() as TeamDailyRecord);
+  const allRecordsRaw = snapshot.docs.map(d => d.data() as TeamDailyRecord);
+  
+  // Fetch all daily tasks to know which days are event days
+  const allTasks = await getAllDailyTasks();
+  const eventDayDates = new Set(allTasks.filter(t => t.isEventDay).map(t => t.date));
+  
+  // Only include records from event days
+  const allRecords = allRecordsRaw.filter(r => eventDayDates.has(r.date));
   
   const uniqueDates = Array.from(new Set(allRecords.map(r => r.date))).sort();
   const latestDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : "";
@@ -410,6 +461,7 @@ export async function forceNewDistribution(date: string): Promise<void> {
       date,
       assignedQuestionIndices,
       questionCompletions: Array(task.questionsPerTeam).fill(false),
+      questionRemarks: Array(task.questionsPerTeam).fill(null),
       isCompleted: false,
       completionTime: null,
       dailyScore: 0,

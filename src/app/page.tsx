@@ -30,7 +30,7 @@ export default function HomePage() {
         <div className="flex items-center gap-2 mb-2">
           <div className="h-px flex-1 bg-border-color" />
           <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
-            Competition Dashboard
+            Dashboard
           </span>
           <div className="h-px flex-1 bg-border-color" />
         </div>

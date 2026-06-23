@@ -1,13 +1,23 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeProvider";
+import { getEventMode } from "@/lib/firestore";
+import type { EventMode } from "@/lib/types";
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
+  const [eventMode, setEventMode] = useState<EventMode>({ mode: "off" });
+
+  useEffect(() => {
+    if (!isAdmin) {
+      getEventMode().then(setEventMode).catch(console.error);
+    }
+  }, [isAdmin]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border-color/60 bg-header-blur backdrop-blur-xl">
@@ -76,3 +86,4 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
     </Link>
   );
 }
+

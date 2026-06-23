@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { getTeams, getDailyTask, getAllRecordsForDate } from "@/lib/firestore";
-import type { Team, TeamDailyRecord } from "@/lib/types";
+import { getTeams, getDailyTask, getAllRecordsForDate, getEventMode, setEventMode as saveEventMode } from "@/lib/firestore";
+import type { Team, TeamDailyRecord, EventMode } from "@/lib/types";
 import LeaderboardPage from "../leaderboard/page";
 import { getTodayDateIST } from "@/lib/utils";
 import InstallToast from "@/components/InstallToast";
@@ -15,6 +15,11 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showPortal, setShowPortal] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Event Mode state
+  const [eventMode, setEventMode] = useState<EventMode>({ mode: "off" });
+  const [compName, setCompName] = useState("");
+  const [savingMode, setSavingMode] = useState(false);
 
   const handleIframeLoad = () => {
     try {
@@ -32,15 +37,37 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const today = getTodayDateIST();
-    Promise.all([getTeams(), getDailyTask(today), getAllRecordsForDate(today)])
-      .then(([t, dt, r]) => {
+    Promise.all([getTeams(), getDailyTask(today), getAllRecordsForDate(today), getEventMode()])
+      .then(([t, dt, r, em]) => {
         setTeams(t);
         setHasTasksToday(!!dt);
         setTodayRecords(r);
+        setEventMode(em);
+        setCompName(em.competitionName || "");
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleSetMode(mode: "off" | "viva" | "competition") {
+    setSavingMode(true);
+    const newMode: EventMode = { mode };
+    if (mode === "competition") {
+      newMode.competitionName = compName || "Competition";
+    }
+    await saveEventMode(newMode);
+    setEventMode(newMode);
+    setSavingMode(false);
+  }
+
+  async function handleSaveCompName() {
+    if (eventMode.mode !== "competition") return;
+    setSavingMode(true);
+    const newMode: EventMode = { mode: "competition", competitionName: compName || "Competition" };
+    await saveEventMode(newMode);
+    setEventMode(newMode);
+    setSavingMode(false);
+  }
 
   const completedCount = todayRecords.filter((r) => r.isCompleted).length;
 
@@ -55,6 +82,67 @@ export default function AdminDashboard() {
   return (
     <div>
       <InstallToast title="Install Admin App" hideIconOnDismiss={true} />
+
+      {/* Event Mode Control */}
+      <div className="rounded-xl border border-border-color bg-bg-secondary p-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-[13px] font-semibold text-text-primary">Event Mode</h3>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              {eventMode.mode === "off"
+                ? "Normal day — no leaderboard or scores visible to teams"
+                : eventMode.mode === "viva"
+                  ? "Viva day — leaderboard and scores are live"
+                  : `${eventMode.competitionName || "Competition"} — leaderboard and scores are live`}
+            </p>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex gap-1 rounded-lg border border-border-color bg-bg-primary p-1">
+              {(["off", "viva", "competition"] as const).map((m) => {
+                const labels = { off: "Off", viva: "Viva", competition: "Competition" };
+                const isActive = eventMode.mode === m;
+                return (
+                  <button
+                    key={m}
+                    onClick={() => handleSetMode(m)}
+                    disabled={savingMode}
+                    className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all ${
+                      isActive
+                        ? m === "off"
+                          ? "bg-bg-tertiary text-text-primary shadow-sm"
+                          : "bg-accent text-white shadow-sm"
+                        : "text-text-muted hover:text-text-secondary"
+                    } disabled:opacity-50`}
+                  >
+                    {labels[m]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {eventMode.mode === "competition" && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={compName}
+                  onChange={(e) => setCompName(e.target.value)}
+                  placeholder="Event name..."
+                  className="rounded-lg border border-border-color bg-bg-primary py-1.5 px-3 text-[12px] text-text-primary outline-none focus:border-accent w-40"
+                />
+                <button
+                  onClick={handleSaveCompName}
+                  disabled={savingMode}
+                  className="rounded-md px-2.5 py-1.5 text-[11px] font-medium bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
         <StatCard label="Total Teams" value={teams.length} />
@@ -181,3 +269,4 @@ function StatCard({
     </div>
   );
 }
+

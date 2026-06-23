@@ -11,8 +11,9 @@ import {
   getLeaderboard,
   checkIsHoliday,
   getCompetitionDay,
+  getEventMode,
 } from "@/lib/firestore";
-import type { Team, TeamDailyRecord, LeaderboardEntry } from "@/lib/types";
+import type { Team, TeamDailyRecord, LeaderboardEntry, EventMode, QuestionRemark } from "@/lib/types";
 import { getTodayDateIST } from "@/lib/utils";
 
 type Tab = "tasks" | "history" | "stats" | "external";
@@ -30,6 +31,12 @@ function formatDateTime(iso: string | null): string {
   });
 }
 
+const REMARK_LABELS: Record<string, { label: string; color: string }> = {
+  excellent: { label: "Excellent", color: "bg-success-bg text-success" },
+  good: { label: "Good", color: "bg-accent-glow text-accent" },
+  "needs-work": { label: "Needs Work", color: "bg-warning-bg text-warning" },
+};
+
 export default function TeamDashboard() {
   const params = useParams();
   const teamId = params.teamId as string;
@@ -41,6 +48,7 @@ export default function TeamDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("tasks");
   const [loading, setLoading] = useState(true);
   const [isHoliday, setIsHoliday] = useState(false);
+  const [eventMode, setEventMode] = useState<EventMode>({ mode: "off" });
 
   useEffect(() => {
     if (!teamId) return;
@@ -51,22 +59,29 @@ export default function TeamDashboard() {
       getTeamAllRecords(teamId),
       getLeaderboard(),
       checkIsHoliday(today),
+      getEventMode(),
+      import("@/lib/firestore").then(m => m.getAllDailyTasks()),
     ])
-      .then(([t, tr, ar, lb, hol]) => {
-        // Calculate total score dynamically from all records to prevent sync issues
+      .then(([t, tr, ar, lb, hol, em, allTasks]) => {
+        // Only count scores from event days
+        const eventDayDates = new Set(allTasks.filter((dt: { isEventDay?: boolean }) => dt.isEventDay).map((dt: { date: string }) => dt.date));
         if (t) {
-          t.totalScore = ar.reduce((sum, r) => sum + (getCompetitionDay(r.date) !== 2 ? (r.dailyScore || 0) : 0), 0);
+          t.totalScore = ar
+            .filter(r => eventDayDates.has(r.date))
+            .reduce((sum, r) => sum + (getCompetitionDay(r.date) !== 2 ? (r.dailyScore || 0) : 0), 0);
         }
         setTeam(t);
         setTodayRecord(tr);
         setAllRecords(ar);
         setLeaderboard(lb);
         setIsHoliday(hol);
+        setEventMode(em);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [teamId]);
 
+  const isEventDay = eventMode.mode !== "off";
   const myRank = leaderboard.find((e) => e.teamId === teamId)?.rank ?? "—";
   const todayRank = todayRecord?.dailyRank && todayRecord.dailyRank > 0 ? todayRecord.dailyRank : "—";
 
@@ -128,16 +143,19 @@ export default function TeamDashboard() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <div className="rounded-lg border border-border-color bg-bg-primary px-4 py-2 text-center">
-              <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium leading-none">Rank</div>
-              <div className="text-xl font-bold text-accent mt-1 leading-none">#{myRank}</div>
+          {/* Only show rank/score on event days */}
+          {isEventDay && (
+            <div className="flex gap-2">
+              <div className="rounded-lg border border-border-color bg-bg-primary px-4 py-2 text-center">
+                <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium leading-none">Rank</div>
+                <div className="text-xl font-bold text-accent mt-1 leading-none">#{myRank}</div>
+              </div>
+              <div className="rounded-lg border border-border-color bg-bg-primary px-4 py-2 text-center">
+                <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium leading-none">Score</div>
+                <div className="text-xl font-bold text-text-primary mt-1 leading-none">{team.totalScore}</div>
+              </div>
             </div>
-            <div className="rounded-lg border border-border-color bg-bg-primary px-4 py-2 text-center">
-              <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium leading-none">Score</div>
-              <div className="text-xl font-bold text-text-primary mt-1 leading-none">{team.totalScore}</div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -160,10 +178,10 @@ export default function TeamDashboard() {
 
       {/* Tab Content */}
       <div>
-        {activeTab === "tasks" && <TasksTab record={todayRecord} isHoliday={isHoliday} />}
-        {activeTab === "history" && <HistoryTab records={allRecords} />}
+        {activeTab === "tasks" && <TasksTab record={todayRecord} isHoliday={isHoliday} isEventDay={isEventDay} />}
+        {activeTab === "history" && <HistoryTab records={allRecords} isEventDay={isEventDay} />}
         {activeTab === "stats" && (
-          <StatsTab team={team} todayRank={todayRank} overallRank={myRank} todayRecord={todayRecord} totalDays={allRecords.length} />
+          <StatsTab team={team} todayRank={todayRank} overallRank={myRank} todayRecord={todayRecord} totalDays={allRecords.length} isEventDay={isEventDay} />
         )}
         {activeTab === "external" && <ExternalTab />}
       </div>
@@ -203,7 +221,7 @@ function ExternalTab() {
 
 /* ─── Tab: Today's Tasks ─────────────────────────────────── */
 
-function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHoliday: boolean }) {
+function TasksTab({ record, isHoliday, isEventDay }: { record: TeamDailyRecord | null; isHoliday: boolean; isEventDay: boolean }) {
   const [qIdx, setQIdx] = useState(0);
 
   if (!record || !record.assignedQuestionIndices || record.assignedQuestionIndices.length === 0) {
@@ -223,12 +241,9 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
   }
 
   // Need to fetch global questions since record only holds indices
-  // For the user dashboard, since it's client-side we'll do a quick fetch
-  // This is a bit of a hack but works for the in-memory store
   const [questions, setQuestions] = useState<string[]>([]);
 
   useEffect(() => {
-    // Import here to avoid circular dependencies at the top level
     import("@/lib/firestore").then(({ getDailyTask }) => {
       getDailyTask(record.date).then(task => {
         if (task) {
@@ -243,6 +258,7 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
   const isCurrentDone = record.questionCompletions[qIdx];
   const globalIdx = record.assignedQuestionIndices[qIdx];
   const qText = questions[globalIdx] || "Loading question...";
+  const currentRemark = record.questionRemarks?.[qIdx] || null;
 
   return (
     <div className="space-y-3">
@@ -279,8 +295,8 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
           )}
         </div>
 
-        {/* Score */}
-        {record.dailyScore > 0 && (
+        {/* Score — only on event days */}
+        {isEventDay && record.dailyScore > 0 && (
           <div className="flex items-center justify-between rounded-lg border border-border-color bg-bg-secondary px-4 py-2.5 min-w-[140px]">
             <span className="text-[13px] text-text-secondary">Score</span>
             <span className="text-lg font-bold text-accent">{record.dailyScore}</span>
@@ -321,6 +337,14 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
 
         <div className="p-5">
           <p className="text-[14px] text-text-primary leading-relaxed">{qText}</p>
+          {/* Show remark badge if set (normal days) */}
+          {!isEventDay && currentRemark && REMARK_LABELS[currentRemark] && (
+            <div className="mt-3 pt-3 border-t border-border-subtle">
+              <span className={`inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold ${REMARK_LABELS[currentRemark].color}`}>
+                {REMARK_LABELS[currentRemark].label}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -329,7 +353,7 @@ function TasksTab({ record, isHoliday }: { record: TeamDailyRecord | null; isHol
 
 /* ─── Tab: History ───────────────────────────────────────── */
 
-function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
+function HistoryTab({ records, isEventDay }: { records: TeamDailyRecord[]; isEventDay: boolean }) {
   const [tasks, setTasks] = useState<Record<string, string[]>>({});
   const [holidays, setHolidays] = useState<string[]>([]);
 
@@ -356,9 +380,9 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
     <div className="space-y-2">
       {records.map((record) => {
         const isSunday = new Date(record.date + "T00:00:00Z").getUTCDay() === 0;
-        const isHoliday = isSunday || holidays.includes(record.date);
+        const isHolidayDay = isSunday || holidays.includes(record.date);
 
-        if (isHoliday) {
+        if (isHolidayDay) {
           return (
             <div key={record.id} className="rounded-lg border border-success/15 bg-success-bg/50 px-4 py-3 flex items-center justify-between">
               <span className="text-[13px] font-medium text-text-primary">
@@ -382,14 +406,16 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
                     {record.date}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span 
-                    className={`text-[13px] font-semibold ${getCompetitionDay(record.date) === 2 ? "text-text-muted line-through" : "text-accent"}`}
-                    title={getCompetitionDay(record.date) === 2 ? "Day 2 score is excluded from overall total" : undefined}
-                  >
-                    {record.dailyScore}
-                  </span>
-                </div>
+                {isEventDay && (
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className={`text-[13px] font-semibold ${getCompetitionDay(record.date) === 2 ? "text-text-muted line-through" : "text-accent"}`}
+                      title={getCompetitionDay(record.date) === 2 ? "Day 2 score is excluded from overall total" : undefined}
+                    >
+                      {record.dailyScore}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -412,12 +438,15 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span 
-                  className={`text-[13px] font-semibold ${getCompetitionDay(record.date) === 2 ? "text-text-muted line-through" : "text-accent"}`}
-                  title={getCompetitionDay(record.date) === 2 ? "Day 2 score is excluded from overall total" : undefined}
-                >
-                  {record.dailyScore}
-                </span>
+                {/* Show score only on event days */}
+                {isEventDay && (
+                  <span 
+                    className={`text-[13px] font-semibold ${getCompetitionDay(record.date) === 2 ? "text-text-muted line-through" : "text-accent"}`}
+                    title={getCompetitionDay(record.date) === 2 ? "Day 2 score is excluded from overall total" : undefined}
+                  >
+                    {record.dailyScore}
+                  </span>
+                )}
                 <svg
                   className="h-3.5 w-3.5 text-text-muted transition-transform group-open:rotate-180"
                   xmlns="http://www.w3.org/2000/svg"
@@ -445,12 +474,21 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
                 {record.assignedQuestionIndices && record.assignedQuestionIndices.map((globalIdx, i) => {
                   const isDone = record.questionCompletions[i];
                   const qText = questions[globalIdx] || "Loading...";
+                  const remark = record.questionRemarks?.[i] || null;
                   return (
                     <div key={i} className="flex gap-2 text-[13px] text-text-secondary items-start">
                       <span className={`text-[10px] font-semibold rounded w-4 text-center shrink-0 mt-0.5 ${isDone ? "text-success bg-success/10" : "text-text-muted"}`}>
                         {isDone ? "✓" : (i + 1)}
                       </span>
-                      <span className={isDone ? "" : ""}>{qText}</span>
+                      <div className="flex-1">
+                        <span>{qText}</span>
+                        {/* Show remark badge in history */}
+                        {remark && REMARK_LABELS[remark] && (
+                          <span className={`ml-2 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold ${REMARK_LABELS[remark].color}`}>
+                            {REMARK_LABELS[remark].label}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -466,26 +504,32 @@ function HistoryTab({ records }: { records: TeamDailyRecord[] }) {
 /* ─── Tab: Statistics ────────────────────────────────────── */
 
 function StatsTab({
-  team, todayRank, overallRank, todayRecord, totalDays,
+  team, todayRank, overallRank, todayRecord, totalDays, isEventDay,
 }: {
   team: Team;
   todayRank: number | string;
   overallRank: number | string;
   todayRecord: TeamDailyRecord | null;
   totalDays: number;
+  isEventDay: boolean;
 }) {
-  const stats = [
-    { label: "Overall Rank", value: `#${overallRank}`, highlight: true },
-    { label: "Today's Rank", value: todayRank === "—" ? "—" : `#${todayRank}`, highlight: false },
-    { label: "Total Score", value: team.totalScore, highlight: true },
-    { label: "Today's Score", value: todayRecord ? `${todayRecord.dailyScore}` : "—", highlight: false },
+  const baseStats = [
     { label: "Days Active", value: totalDays, highlight: false },
     { label: "Members", value: team.members.length, highlight: false },
   ];
 
+  const eventStats = [
+    { label: "Overall Rank", value: `#${overallRank}`, highlight: true },
+    { label: "Today's Rank", value: todayRank === "—" ? "—" : `#${todayRank}`, highlight: false },
+    { label: "Total Score", value: team.totalScore, highlight: true },
+    { label: "Today's Score", value: todayRecord ? `${todayRecord.dailyScore}` : "—", highlight: false },
+  ];
+
+  const stats = isEventDay ? [...eventStats, ...baseStats] : baseStats;
+
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid gap-2 ${isEventDay ? "grid-cols-3" : "grid-cols-2"}`}>
         {stats.map((s) => (
           <div key={s.label} className="rounded-lg border border-border-color bg-bg-secondary p-3.5">
             <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium">{s.label}</div>

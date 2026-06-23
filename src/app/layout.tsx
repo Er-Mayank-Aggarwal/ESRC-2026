@@ -7,7 +7,7 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: "ESRC 2026",
-  description: "ESRC 2026 Daily Challenges App",
+  description: "ESRC 2026 Dashboard App",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon-192x192.png",

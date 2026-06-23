@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLeaderboard, getDailyLeaderboard, checkIsHoliday } from "@/lib/firestore";
-import type { LeaderboardEntry } from "@/lib/types";
+import { getLeaderboard, getDailyLeaderboard, checkIsHoliday, getEventMode, getDailyTask } from "@/lib/firestore";
+import type { LeaderboardEntry, EventMode } from "@/lib/types";
 import { getTodayDateIST } from "@/lib/utils";
 
 function getTodayDate(): string {
@@ -18,8 +18,16 @@ export default function LeaderboardPage() {
   const [tab, setTab] = useState<TabType>("overall");
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
   const [isHoliday, setIsHoliday] = useState(false);
+  const [eventMode, setEventMode] = useState<EventMode | null>(null);
+  const [isDayEventDay, setIsDayEventDay] = useState(false);
 
   useEffect(() => {
+    getEventMode().then(setEventMode).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (eventMode === null) return;
+
     setLoading(true);
     if (tab === "overall") {
       setIsHoliday(false);
@@ -28,9 +36,12 @@ export default function LeaderboardPage() {
         .catch(console.error)
         .finally(() => setLoading(false));
     } else {
-      checkIsHoliday(selectedDate).then(holiday => {
+      // Check if selected day is an event day
+      Promise.all([checkIsHoliday(selectedDate), getDailyTask(selectedDate)]).then(([holiday, task]) => {
         setIsHoliday(holiday);
-        if (holiday) {
+        const isEvent = task?.isEventDay === true;
+        setIsDayEventDay(isEvent);
+        if (holiday || !isEvent) {
           setEntries([]);
           setLoading(false);
         } else {
@@ -41,13 +52,19 @@ export default function LeaderboardPage() {
         }
       });
     }
-  }, [tab, selectedDate]);
+  }, [tab, selectedDate, eventMode]);
+
+  const getTitle = () => {
+    if (!eventMode || eventMode.mode === "off") return "Leaderboard";
+    if (eventMode.mode === "viva") return "Viva Leaderboard";
+    return `${eventMode.competitionName || "Competition"} Leaderboard`;
+  };
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Leaderboard</h1>
+          <h1 className="text-xl font-bold tracking-tight">{getTitle()}</h1>
           <p className="mt-1 text-[12px] text-text-muted">
             {tab === "overall" ? "Overall rankings based on cumulative scores" : "Rankings based on scores for a specific day"}
           </p>
@@ -73,17 +90,17 @@ export default function LeaderboardPage() {
             >
               Daily
             </button>
-          <button
-            onClick={() => setTab("overall")}
-            className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all ${
-              tab === "overall" ? "bg-bg-primary text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"
-            }`}
-          >
-            Overall
-          </button>
+            <button
+              onClick={() => setTab("overall")}
+              className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all ${
+                tab === "overall" ? "bg-bg-primary text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"
+              }`}
+            >
+              Overall
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
       {loading && (
         <div className="flex justify-center py-24">
@@ -116,9 +133,8 @@ export default function LeaderboardPage() {
                   className={`rounded-xl border ${colors[rank as 1|2|3]} ${heights[rank as 1|2|3]} pb-4 px-3 text-center hover:shadow-[var(--card-shadow-hover)] transition-all`}
                 >
                   <div className="text-2xl mb-1">{icons[rank as 1|2|3]}</div>
-                  <div className={`text-[13px] font-bold ${textColors[rank as 1|2|3]} flex justify-center items-center gap-1`}>
+                  <div className={`text-[13px] font-bold ${textColors[rank as 1|2|3]}`}>
                     {entry.teamName}
-                    {tab === "overall" && <RankChangeIndicator change={entry.rankChange} />}
                   </div>
                   <div className="text-lg font-bold text-text-primary mt-0.5">{entry.totalScore}</div>
                   <div className="text-[10px] text-text-muted mt-0.5">points</div>
@@ -144,10 +160,7 @@ export default function LeaderboardPage() {
                     className="border-b border-border-subtle last:border-b-0 hover:bg-bg-tertiary/30 transition-colors"
                   >
                     <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[12px] tabular-nums text-text-muted">{entry.rank}</span>
-                        {tab === "overall" && <RankChangeIndicator change={entry.rankChange} />}
-                      </div>
+                      <span className="text-[12px] tabular-nums text-text-muted">{entry.rank}</span>
                     </td>
                     <td className="px-4 py-2.5">
                       <Link href={`/team/${entry.teamId}`} prefetch={false} className="text-[13px] font-medium text-text-primary hover:text-accent transition-colors">
@@ -165,9 +178,15 @@ export default function LeaderboardPage() {
         </>
       )}
 
-      {!loading && entries.length === 0 && !isHoliday && (
+      {!loading && entries.length === 0 && !isHoliday && tab === "overall" && (
         <div className="rounded-xl border border-border-color bg-bg-secondary p-10 text-center">
           <p className="text-[13px] text-text-muted">No scores recorded yet.</p>
+        </div>
+      )}
+
+      {!loading && tab === "daily" && !isHoliday && !isDayEventDay && (
+        <div className="rounded-xl border border-border-color bg-bg-secondary p-10 text-center">
+          <p className="text-[13px] text-text-muted">No scores for this day. Scores are only available on viva or competition days.</p>
         </div>
       )}
 
@@ -179,12 +198,4 @@ export default function LeaderboardPage() {
       )}
     </div>
   );
-}
-
-function RankChangeIndicator({ change }: { change?: number }) {
-  if (!change || change === 0) return null;
-  if (change > 0) {
-    return <span className="text-[10px] text-success font-semibold tracking-tighter" title="Rank up">▲{change}</span>;
-  }
-  return <span className="text-[10px] text-danger font-semibold tracking-tighter" title="Rank down">▼{Math.abs(change)}</span>;
 }
